@@ -1,0 +1,23 @@
+Library/
+Temp/
+Obj/
+Builds/
+Logs/
+UserSettings/
+.vs/
+*.csproj
+*.sln
+node_modules/
+.env
+server/session.json
+docs/evidence/*.dll
+docs/evidence/*.rsp
+/web/tabletop/
+
+# Local credentials and future browser diagnostics
+.env.*
+!.env.example
+*.pem
+*.p12
+playwright-report/
+test-results/

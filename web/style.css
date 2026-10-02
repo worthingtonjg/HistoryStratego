@@ -1,0 +1,184 @@
+* {
+	box-sizing: border-box
+}
+
+body {
+	margin: 0;
+	background: #eee7d6;
+	color: #202d36;
+	font: 16px/1.45 Georgia, serif
+}
+
+header {
+	background: #16354a;
+	color: #fff7e6;
+	padding: 22px 5%;
+	border-bottom: 5px solid #bd974f
+}
+
+h1 {
+	margin: 3px 0;
+	font-size: 34px
+}
+
+header p {
+	margin: 0
+}
+
+small {
+	letter-spacing: 2px;
+	font: 12px sans-serif
+}
+
+main {
+	max-width: 1200px;
+	margin: auto;
+	padding: 20px
+}
+
+section,
+details {
+	background: #fffaf0;
+	padding: 20px;
+	margin-bottom: 16px;
+	border: 1px solid #cfbea2;
+	border-radius: 8px
+}
+
+label {
+	display: inline-flex;
+	flex-direction: column;
+	margin: 6px
+}
+
+input {
+	padding: 10px;
+	border: 1px solid #78848a;
+	border-radius: 4px;
+	font: 16px sans-serif
+}
+
+button {
+	cursor: pointer;
+	padding: 10px;
+	margin: 3px;
+	border: 1px solid #536778;
+	border-radius: 5px;
+	background: #244c66;
+	color: white;
+	font: 14px sans-serif
+}
+
+button:disabled {
+	opacity: .45;
+	cursor: default
+}
+
+button:focus-visible,
+input:focus-visible {
+	outline: 3px solid #d19a26;
+	outline-offset: 2px
+}
+
+.game {
+	display: grid;
+	grid-template-columns: minmax(420px, 720px) 1fr;
+	gap: 20px
+}
+
+#board {
+	display: grid;
+	grid-template-columns: repeat(10, 1fr);
+	gap: 2px;
+	align-self: start
+}
+
+#board button {
+	margin: 0;
+	padding: 2px;
+	aspect-ratio: 1;
+	border-radius: 3px;
+	font-size: clamp(10px, 1.3vw, 15px);
+	background: #e6dbc4;
+	color: #253846;
+	border: 1px solid #c1b599
+}
+
+#board button.p0 {
+	background: #595c61;
+	color: white
+}
+
+#board button.p1 {
+	background: #234e72;
+	color: white
+}
+
+#board button.lake {
+	background: #82b4bd;
+	color: #183e51
+}
+
+#board button.selected {
+	outline: 4px solid #e6b441;
+	z-index: 1
+}
+
+#error {
+	color: #9b252b;
+	min-height: 24px
+}
+
+.fact {
+	border-left: 6px solid #bd974f
+}
+
+.fact>p:first-of-type {
+	font-size: 20px;
+	min-height: 58px
+}
+
+.caption {
+	font: 13px/1.5 sans-serif;
+	color: #5b666b
+}
+
+#roster {
+	display: flex;
+	flex-wrap: wrap
+}
+
+#events {
+	padding-left: 20px;
+	font-size: 14px
+}
+
+a {
+	color: #194e71
+}
+
+aside p {
+	font-size: 14px
+}
+
+@media(max-width:800px) {
+	.game {
+		grid-template-columns: 1fr
+	}
+
+	main {
+		padding: 8px
+	}
+
+	section {
+		padding: 12px
+	}
+
+	#board button {
+		font-size: 10px
+	}
+
+	h1 {
+		font-size: 26px
+	}
+}

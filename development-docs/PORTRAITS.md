@@ -1,0 +1,11 @@
+# Commander portraits
+
+All 48 roster commanders have a canonical PNG in `Assets/Resources/CommanderPortraits`: 24 Union and 24 Confederate. The user supplied twelve ZIPs in Downloads on 2026-10-01. Every ZIP passed CRC verification and strict path/entry validation before extraction into a new staging directory. All 48 canonical IDs, full names and factions match the roster; all 48 SHA256 values and 1254x1254 dimensions match the supplied manifests. Existing Ord and Early images are byte-for-byte identical to the collection copies. No unknown file was overwritten; Downloads originals and archives remain unchanged.
+
+`commander-portraits.json` maps each commander ID to its Unity resource path and retains the producer's archival references, individual historical notes, accuracy disclaimer and source checksum. `portrait-provenance/` retains the twelve original manifests/readmes and archive hashes. Both faction contact sheets are in `evidence/portraits-48/` and were inspected for coherent, distinct portraits, intact faces and correct image/label mapping. This does not claim independent historical authentication of every likeness.
+
+These are source-informed illustrations intended to resemble historical commanders, not photographs or claims of exact appearance. Colors, faction accents and simplified clothing are artistic choices. The full original PNG art is retained in the project; Unity caps runtime texture dimensions at 512, disables mipmaps and CPU-readable copies, and enables compression. The 150-unit profile image preserves aspect ratio. Images appear in the waiting room and in-game commander modal, without reducing board dimensions. Missing future images retain the text-only fallback.
+
+The earlier Library transfer failed before installation because the Windows helper requires unavailable `os.setxattr`. No helper bypass or partial download was used. The user's explicit local-file handoff resolved access, first for two revisions and then for the complete collection.
+
+The combined immediate-on-join, portrait and waiting-guidance build remains staged. Classroom 8489 has not been reset; applying the changed authority and client requires a coordinated transition behind the same canonical URL.

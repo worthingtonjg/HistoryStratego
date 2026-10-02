@@ -1,0 +1,42 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { containsCode } from './source-format-helper.mjs';
+const source = readFileSync('Assets/Scripts/HistoryGame.cs', 'utf8');
+test('commander client joins without a name and uses frozen match profiles', () => {
+	assert.ok(containsCode(source, 'Send("join", new Command { classCode = code.Trim().ToUpperInvariant() });'));
+	assert.ok(!source.includes('"Nickname"'));
+	assert.ok(containsCode(source, 'm.commanders[m.side] : state?.commander'));
+	assert.ok(source.includes('A historical commander is assigned when you join.'));
+	assert.ok(source.includes('Please wait for your teacher to assign an opponent'));
+	assert.ok(source.includes('Please wait for your teacher to start'));
+	assert.ok(source.includes('Please wait for your teacher to arrange the next round'));
+	assert.ok(source.includes("You'll play as "));
+	assert.ok(source.includes('HOW TO PLAY - read while you wait'));
+	assert.ok(!source.includes('state.nickname + " | "'));
+	assert.ok(source.includes('Offline - reconnect to pair'));
+	assert.ok(source.includes('same faction to swap'));
+	assert.ok(containsCode(source, '(p.side == 1 ? " | Union | " : " | Confederate | ")'));
+	assert.ok(!source.includes('\u00e2\u20ac\u00a2'));
+	assert.ok(!source.includes('Waiting for commander assignment'));
+	assert.ok(containsCode(source, 'if (string.IsNullOrEmpty(state.commander?.id)) state.commander = null;'));
+	assert.ok(!source.includes('Historical example'));
+	assert.ok(source.includes('Learn more'));
+	assert.ok(source.includes('This game uses Stratego rules; it does not recreate this commander’s historical battles.'));
+	assert.ok(containsCode(source, 'heading.CalcHeight(new GUIContent(name), width)'));
+	assert.ok(containsCode(source, 'linkStyle.normal.textColor = linkColor;'));
+	assert.ok(containsCode(source, '(commander.side == 1 ? "Union" : "Confederate")'));
+	assert.ok(containsCode(source, 'm.playerNames[0] : "Player"'));
+});
+test('commander overlay cannot pick the board and yields to mandatory combat and results', () => {
+	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen;'));
+	assert.ok(containsCode(source, 'if (!commanderOpen && !readOnly && !EndgamePresentation.Terminal'));
+	assert.ok(containsCode(source, 'profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over"'));
+	assert.ok(containsCode(source, 'combatDismissUntil = Time.unscaledTime + .65f;'));
+	assert.ok(containsCode(source, 'source.Scheme == "https"'));
+});
+test('successful spectate clears stale previous-match errors, including routine polls', () => {
+	const branch = source.slice(source.indexOf('else if (route == "teacher/spectate")'), source.indexOf('else if (route.StartsWith("teacher/"))'));
+	assert.ok(containsCode(branch, 'SyncPresence(spectator.phase, spectator.presence); error = "";'));
+	assert.ok(!branch.includes('if (!routine)'));
+});

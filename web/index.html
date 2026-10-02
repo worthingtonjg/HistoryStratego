@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Civil War: Hidden Orders</title>
+<link rel="stylesheet" href="/style.css">
+<header><small>HISTORY CLASSROOM • LOCAL PROTOTYPE</small>
+	<h1>Civil War: Hidden Orders</h1>
+	<p>Union forces & Confederate forces • Full 40-piece strategy</p>
+</header>
+<main>
+	<p><strong>Teacher and student game:</strong> <a href="/tabletop/index.html">Open the current Unity classroom</a>.
+		This page is only verification scaffolding.</p>
+	<section id="login">
+		<h2>Enter your classroom</h2><label>Class code <input id="code" maxlength="12"></label>
+		<p>Your commander is assigned after teacher pairing. No real name is needed.</p><button id="join">Join waiting
+			room</button>
+		<details>
+			<summary>Teacher desk</summary><label>Local teacher key <input id="key" type="password"></label><button
+				id="teacher">Open teacher desk</button>
+			<p>Key is printed only in the local server terminal. This is a development identity, not school sign-in.</p>
+		</details>
+	</section>
+	<p id="error" role="alert"></p>
+	<section id="teacherPanel" hidden>
+		<h2>Teacher desk</h2>
+		<p id="teacherStatus"></p>
+		<div id="controls"></div>
+		<p>Select two names to swap their pairing positions. Odd student waits for the next round.</p>
+		<div id="roster"></div>
+	</section>
+	<section id="studentPanel" hidden>
+		<h2 id="status">Waiting for teacher</h2>
+		<p id="hint"></p>
+		<div id="setupControls"><button id="shuffle">Shuffle formation</button><button id="ready">Lock
+				formation</button></div>
+		<div class="game">
+			<div id="board" role="group" aria-label="Game board"></div>
+			<aside>
+				<h3>Field guide</h3>
+				<p>Higher ranks win. Equal ranks both leave the board. Spy wins only when attacking Marshal. Miners
+					defuse Bombs. Scouts move any clear straight distance. Capture the Flag or leave your opponent
+					without legal moves.</p>
+				<p>Click a piece, then a destination. During setup, click two pieces to swap.</p>
+				<div id="legend"></div>
+				<h3>Combat dispatches</h3>
+				<ol id="events"></ol>
+			</aside>
+		</div>
+	</section>
+	<section class="fact"><small>DID YOU KNOW?</small>
+		<p id="factText"></p><button id="pauseFact">Pause</button><button id="nextFact">Next fact</button> <a
+			id="factSource" target="_blank" rel="noopener">Read the source</a>
+		<p class="caption">Historical learning, separate from fictional gameplay. Piece encounters do not represent
+			actual battles.</p>
+	</section>
+	<section aria-label="Classroom connection">
+		<p id="playroomStatus" role="status">Join the classroom to connect presence automatically.</p><button
+			id="playroomRetry">Reload and reconnect</button>
+	</section>
+	<p class="caption">Browser verification client. The primary deliverable is the Unity WebGL client at <a
+			href="/unity/index.html">/unity/</a> after a licensed build.</p>
+</main>
+<script type="module" src="/app.mjs"></script>
+
+</html>

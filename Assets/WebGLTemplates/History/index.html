@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<title>Civil War: Hidden Orders</title>
+	<style>
+		body {
+			margin: 0;
+			background: #132633;
+			color: white;
+			font-family: sans-serif
+		}
+
+		canvas {
+			width: 100vw;
+			height: 100vh;
+			display: block
+		}
+
+		#loading {
+			position: absolute;
+			top: 45%;
+			width: 100%;
+			text-align: center
+		}
+	</style>
+</head>
+
+<body>
+	<div id="loading">Loading the classroom…</div><canvas id="unity-canvas" tabindex="-1"></canvas>
+	<script src="Build/{{{ LOADER_FILENAME }}}"></script>
+	<script>
+		createUnityInstance(document.querySelector('#unity-canvas'), {
+			dataUrl: 'Build/{{{ DATA_FILENAME }}}', frameworkUrl: 'Build/{{{ FRAMEWORK_FILENAME }}}', codeUrl: 'Build/{{{ CODE_FILENAME }}}', devicePixelRatio: Math.min(window.devicePixelRatio || 1, 1.25), streamingAssetsUrl: 'StreamingAssets', companyName: 'History Classroom', productName: 'Civil War Hidden Orders', productVersion: '0.1.0'
+		}).then(instance => {
+			window.unityInstance = instance;
+			for (const event of ["pointerdown", "pointermove", "keydown"])
+				document.addEventListener(event, () => instance.SendMessage("HistoryGame", "WakeRendering"));
+			document.querySelector('#loading').remove();
+		}).catch(e => {
+			document.querySelector('#loading').textContent = 'Unable to load: ' + e;
+		});
+	</script>
+</body>
+
+</html>

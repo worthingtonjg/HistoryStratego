@@ -1,0 +1,1123 @@
+{
+  "abraham-lincoln": {
+    "leaderID": "abraham-lincoln",
+    "fullName": "Abraham Lincoln",
+    "displayName": "Lincoln",
+    "faction": "Union",
+    "role": "President",
+    "portraitFile": "portraits/abraham-lincoln.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "cd5227d61b30725d723df10c15854d14fb85624b5062faf516f93265adeb6d3b",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018672529/",
+        "image_url": "https://cdn.loc.gov/service/pnp/ppmsca/19400/19470v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/abraham-lincoln",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "ulysses-s-grant": {
+    "leaderID": "ulysses-s-grant",
+    "fullName": "Ulysses S. Grant",
+    "displayName": "Grant",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/ulysses-s-grant.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "99fc10aaa34a2c6b3022059ff662eb7f9bb0fa3bac4450d966624d127067a6ee",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2019630719/",
+        "image_url": "https://cdn.loc.gov/service/pnp/ppmsca/58200/58233v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/ulysses-s-grant",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "william-tecumseh-sherman": {
+    "leaderID": "william-tecumseh-sherman",
+    "fullName": "William Tecumseh Sherman",
+    "displayName": "Sherman",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/william-tecumseh-sherman.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "f85d2b1e833ebf1c630e2f0978e1e05350aeb87ff39395ecd3321a543820301f",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2017894200/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpbh/00500/00591v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "referenceNote": "Identified 1869 Library of Congress portrait; a close postwar likeness.",
+    "resource": "CommanderPortraits/william-tecumseh-sherman",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "philip-henry-sheridan": {
+    "leaderID": "philip-henry-sheridan",
+    "fullName": "Philip Henry Sheridan",
+    "displayName": "Sheridan",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/philip-henry-sheridan.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "ce31895c9bb0074f4f322f03189e48002bf689a6bef59d93968231a3a1b1e468",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2017896949/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpbh/01000/01008v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/philip-henry-sheridan",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "george-henry-thomas": {
+    "leaderID": "george-henry-thomas",
+    "fullName": "George Henry Thomas",
+    "displayName": "Thomas",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/george-henry-thomas.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "601e93caa9822cc73294a09a9826240b04b5f9334b521612524927c9026e8c41",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2003674852/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cph/3c20000/3c29000/3c29600/3c29689r.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/george-henry-thomas",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "james-birdseye-mcpherson": {
+    "leaderID": "james-birdseye-mcpherson",
+    "fullName": "James Birdseye McPherson",
+    "displayName": "McPherson",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/james-birdseye-mcpherson.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "886c3d2853c9245cbbfe6c77242a0f7bc17b91d5d85c474c5a1d0eb677224a64",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666457/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpb/07000/07051v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/james-birdseye-mcpherson",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "edward-otho-cresap-ord": {
+    "leaderID": "edward-otho-cresap-ord",
+    "fullName": "Edward Otho Cresap Ord",
+    "displayName": "Ord",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/edward-otho-cresap-ord.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "efc0f3c693fb22cfc1e7ea708777eabbff7e152498eb7813cb438418f1e91e75",
+    "references": [
+      {
+        "role": "primary facial identity",
+        "page_url": "https://www.nps.gov/articles/000/civil-war-general-busts.htm",
+        "image_url": "https://www.nps.gov/articles/000/images/Gen_2.tif?autorotate=false&maxwidth=650",
+        "identification": "Gen. Edward O.C. Ord, between circa 1860 and circa 1865",
+        "credit": "National Archives and Records Administration, image reproduced by National Park Service"
+      },
+      {
+        "role": "supporting identity",
+        "page_url": "https://www.loc.gov/item/2017897343/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpbh/01200/01212v.jpg",
+        "identification": "Gen. Ord, U.S.A.; between 1855 and 1865",
+        "credit": "Brady-Handy photograph collection, Library of Congress, Prints and Photographs Division",
+        "rights": "LOC states no known restrictions on publication and Brady-Handy Collection public domain; title from unverified information on negative sleeve, identity cross-checked against NPS/NARA identified portrait"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/edward-otho-cresap-ord",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "george-brinton-mcclellan": {
+    "leaderID": "george-brinton-mcclellan",
+    "fullName": "George Brinton McClellan",
+    "displayName": "McClellan",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/george-brinton-mcclellan.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "58cd4351151fa36f8d11c29f64e2422cfdb425300d4b473c6e6000fb282c7135",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018669889/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpb/07000/07035v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/george-brinton-mcclellan",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "george-gordon-meade": {
+    "leaderID": "george-gordon-meade",
+    "fullName": "George Gordon Meade",
+    "displayName": "Meade",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/george-gordon-meade.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "23ad9dbfb035adc12175fa9b7b09354a90f99680220a7937ab0c70c3ccc4c1f8",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2017895910/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpbh/01100/01198v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/george-gordon-meade",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "ambrose-everett-burnside": {
+    "leaderID": "ambrose-everett-burnside",
+    "fullName": "Ambrose Everett Burnside",
+    "displayName": "Burnside",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/ambrose-everett-burnside.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "31fa567d22ce1420a57d0587c30dbcbb3da4ca84879901083f633d9998a14f24",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666399/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpb/05300/05368v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/ambrose-everett-burnside",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "joseph-hooker": {
+    "leaderID": "joseph-hooker",
+    "fullName": "Joseph Hooker",
+    "displayName": "Hooker",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/joseph-hooker.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "ef0c69b9f4ec6c77aae8bde9c55912db7e33d613a1e1c01c280991dc9c2ff7c7",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666437/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpb/06900/06979v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/joseph-hooker",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "john-buford": {
+    "leaderID": "john-buford",
+    "fullName": "John Buford",
+    "displayName": "Buford",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/john-buford.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "787e185559287c956aaef7fc2d4d960bb0753ee818d6344796337197a33082dd",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666398/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cwpb/06300/06372v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/john-buford",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "john-fulton-reynolds": {
+    "leaderID": "john-fulton-reynolds",
+    "fullName": "John Fulton Reynolds",
+    "displayName": "Reynolds",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/john-fulton-reynolds.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "55093eed3ae314ecf6f8d4ac0b1cdcf5855992109584cbf0ee0cb60a03151ead",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2016646133/",
+        "image_url": "https://cdn.loc.gov/service/pnp/ppmsca/40500/40576v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/john-fulton-reynolds",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "abner-doubleday": {
+    "leaderID": "abner-doubleday",
+    "fullName": "Abner Doubleday",
+    "displayName": "Doubleday",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/abner-doubleday.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "4fb4c09e28bb66aba8d124d5aa37bfd2438c9e27c16036c5a0e6695519a8559b",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2017896689/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpbh/00700/00763v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/abner-doubleday",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "winfield-scott-hancock": {
+    "leaderID": "winfield-scott-hancock",
+    "fullName": "Winfield Scott Hancock",
+    "displayName": "Hancock",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/winfield-scott-hancock.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "76a709cf4512d94f8d8da44626aa06a9a616751bd415d03243f271458b856262",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2002719476/",
+        "image_url": "https://cdn.loc.gov/service/pnp/cph/3c30000/3c31000/3c31800/3c31810v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/winfield-scott-hancock",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "oliver-otis-howard": {
+    "leaderID": "oliver-otis-howard",
+    "fullName": "Oliver Otis Howard",
+    "displayName": "Howard",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/oliver-otis-howard.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "cd7ad0a4daf00d16e0c68b2d87dc950136107cbf573fbc670d46a0495afe5523",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2006681382/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cph/3b00000/3b00000/3b00400/3b00473r.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/oliver-otis-howard",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "henry-jackson-hunt": {
+    "leaderID": "henry-jackson-hunt",
+    "fullName": "Henry Jackson Hunt",
+    "displayName": "Hunt",
+    "faction": "Union",
+    "role": "General / artillery chief",
+    "portraitFile": "portraits/henry-jackson-hunt.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "6d1850c59195b5fa3d8e17a342691de34b15509905f6c1b35161b1cbf6f69824",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666441/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/05800/05876v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/henry-jackson-hunt",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "daniel-edgar-sickles": {
+    "leaderID": "daniel-edgar-sickles",
+    "fullName": "Daniel Edgar Sickles",
+    "displayName": "Sickles",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/daniel-edgar-sickles.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "13d53b7a6a6b33e79bb00f3590e707a30dcaf94c1aa1a686fd528736506a5758",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666488/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/05500/05563v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/daniel-edgar-sickles",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "gouverneur-kemble-warren": {
+    "leaderID": "gouverneur-kemble-warren",
+    "fullName": "Gouverneur Kemble Warren",
+    "displayName": "Warren",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/gouverneur-kemble-warren.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "5bfa090ba6e995178d6b1e07d9679fc79b9cf5045de418635e3c51411001bf62",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666508/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/05600/05646v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/gouverneur-kemble-warren",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "joshua-lawrence-chamberlain": {
+    "leaderID": "joshua-lawrence-chamberlain",
+    "fullName": "Joshua Lawrence Chamberlain",
+    "displayName": "Chamberlain",
+    "faction": "Union",
+    "role": "Colonel at Gettysburg; later general",
+    "portraitFile": "portraits/joshua-lawrence-chamberlain.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "343db4127d18b91f59a53e894a7159520ced656723a25adc2cec48f59692d38b",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018667306/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpbh/03100/03163v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/joshua-lawrence-chamberlain",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "george-armstrong-custer": {
+    "leaderID": "george-armstrong-custer",
+    "fullName": "George Armstrong Custer",
+    "displayName": "Custer",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/george-armstrong-custer.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "0b08f5e60daeaadfa91411298637efb38af7f060ce9cfcda8877e93dea3488bf",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666410/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/05300/05341v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/george-armstrong-custer",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "alexander-stewart-webb": {
+    "leaderID": "alexander-stewart-webb",
+    "fullName": "Alexander Stewart Webb",
+    "displayName": "Webb",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/alexander-stewart-webb.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "a8430462f160910bdb899654f0995110fe192423bc45417a1ea7d6d7479375a1",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666509/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/05900/05917v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/alexander-stewart-webb",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "william-starke-rosecrans": {
+    "leaderID": "william-starke-rosecrans",
+    "fullName": "William Starke Rosecrans",
+    "displayName": "Rosecrans",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/william-starke-rosecrans.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "58b0b87ee394a0355431b192e403b0f2b80886764fa85cdab0409cfdf9f587bd",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666481/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/06000/06052v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/william-starke-rosecrans",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "don-carlos-buell": {
+    "leaderID": "don-carlos-buell",
+    "fullName": "Don Carlos Buell",
+    "displayName": "Buell",
+    "faction": "Union",
+    "role": "General",
+    "portraitFile": "portraits/don-carlos-buell.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "ed067150f51a04f17b3f1440526969c0b4cecc0d0032925da7b8535ffdf21577",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2011661068/",
+        "image_url": "https://cdn.loc.gov/service/pnp/stereo/1s00000/1s02000/1s02800/1s02846v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/don-carlos-buell",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "robert-edward-lee": {
+    "leaderID": "robert-edward-lee",
+    "fullName": "Robert Edward Lee",
+    "displayName": "Robert E. Lee",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/robert-edward-lee.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "1f028e4f1b65b9a2be9c32889c9a412d52457613f6cc32839b0bbf7f07e44a4f",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666540/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/04400/04402v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/robert-edward-lee",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "james-longstreet": {
+    "leaderID": "james-longstreet",
+    "fullName": "James Longstreet",
+    "displayName": "Longstreet",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/james-longstreet.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "0be817e6e026e977e91c1d49ea27f7b7a6f71b124675c3da1bdc1dbf06779888",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2018666541/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/06000/06085v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/james-longstreet",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "richard-stoddert-ewell": {
+    "leaderID": "richard-stoddert-ewell",
+    "fullName": "Richard Stoddert Ewell",
+    "displayName": "Ewell",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/richard-stoddert-ewell.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "206c460fd17f21872cdf0682835cfca86cbf224f41f7a446e9c88dbacb884b10",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/pictures/item/2022630545/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/ppmsca/78000/78076v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/richard-stoddert-ewell",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "ambrose-powell-hill": {
+    "leaderID": "ambrose-powell-hill",
+    "fullName": "Ambrose Powell Hill",
+    "displayName": "A. P. Hill",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/ambrose-powell-hill.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "fe93fd874bad5128b5732733ad46af58ef7a1b46bd8e581ad023efd25b41bc5a",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/pictures/item/2022630549/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/ppmsca/78000/78084v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/ambrose-powell-hill",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "henry-heth": {
+    "leaderID": "henry-heth",
+    "fullName": "Henry Heth",
+    "displayName": "Heth",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/henry-heth.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "ab1a0da6332a4cee078bd39d936837a3667be89d6316313e2803c83ac7683b6f",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/pictures/item/2018670435/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpb/07500/07586v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/henry-heth",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "john-bell-hood": {
+    "leaderID": "john-bell-hood",
+    "fullName": "John Bell Hood",
+    "displayName": "Hood",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/john-bell-hood.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "02bf66f2f54d3906f42846813529541c92011dd99afd10a40ca2ef9e01231c0f",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/john-bell-hood.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/C7EFD285-B01C-8596-AB9890731FC87613/C7EFD285-B01C-8596-AB9890731FC87613.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/john-bell-hood",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "george-edward-pickett": {
+    "leaderID": "george-edward-pickett",
+    "fullName": "George Edward Pickett",
+    "displayName": "Pickett",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/george-edward-pickett.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "c1a0bd98be5e0e214cd2321af10df3810bf05e46ae34700454798d4068d46986",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/pictures/item/2017894215/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpbh/00600/00682v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/george-edward-pickett",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "james-ewell-brown-stuart": {
+    "leaderID": "james-ewell-brown-stuart",
+    "fullName": "James Ewell Brown Stuart",
+    "displayName": "J. E. B. Stuart",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/james-ewell-brown-stuart.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "77e81fad8c1768d1d8188a2d55f485f78fba6ffca3922841e0863aa62ea2c6f1",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/james-ewell-brown-jeb-stuart.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/C7ABF76F-9D4B-4367-EC7E82843A88F158/C7ABF76F-9D4B-4367-EC7E82843A88F158.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/james-ewell-brown-stuart",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "john-brown-gordon": {
+    "leaderID": "john-brown-gordon",
+    "fullName": "John Brown Gordon",
+    "displayName": "Gordon",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/john-brown-gordon.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "b6bcaf8d3db3cca848bca4c66e4946afa05b38213382f835e9d60b3ac53c4bf9",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/john-b-gordon.htm",
+        "image_url": "https://www.nps.gov/common/uploads/cropped_image/primary/7F8CBFF3-C42E-BE90-C3D927517665E789.jpg?width=600&quality=90&mode=crop&format=webp",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/john-brown-gordon",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "edward-porter-alexander": {
+    "leaderID": "edward-porter-alexander",
+    "fullName": "Edward Porter Alexander",
+    "displayName": "Alexander",
+    "faction": "Confederate",
+    "role": "Artillery commander",
+    "portraitFile": "portraits/edward-porter-alexander.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "827f9e4d7e22afcc207eb219896adc170bcb6556c1ac7b977b6e27b6ca6fbe6c",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/coll/nucmc/2012CivilWar/11_EdwardAlexanderLetter.html",
+        "image_url": "https://www.loc.gov/coll/nucmc/2012CivilWar/Images/11_EdwardPAlexander.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/edward-porter-alexander",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "lewis-addison-armistead": {
+    "leaderID": "lewis-addison-armistead",
+    "fullName": "Lewis Addison Armistead",
+    "displayName": "Armistead",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/lewis-addison-armistead.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "0fe36244a687f92cf1f83aea3f51f7f8c9a96355eeb1a0b31747ce877c773fe8",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/fomc/learn/historyculture/gettysburg-prisoners-of-war.htm",
+        "image_url": "https://www.nps.gov/fomc/learn/historyculture/images/Lewis_A_6560655_2.jpg?maxwidth=650&autorotate=false",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/lewis-addison-armistead",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "eppa-hunton": {
+    "leaderID": "eppa-hunton",
+    "fullName": "Eppa Hunton",
+    "displayName": "Hunton",
+    "faction": "Confederate",
+    "role": "Colonel at Gettysburg; later general",
+    "portraitFile": "portraits/eppa-hunton.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "44cd399e767af4160ffaf88ce3a540d23e9b02441427f1fe25b89fbd377ba6ce",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/pictures/item/2017895054/",
+        "image_url": "https://tile.loc.gov/storage-services/service/pnp/cwpbh/04800/04813v.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "referenceNote": "Library of Congress source dates to 1865\u20131880; a postwar likeness.",
+    "resource": "CommanderPortraits/eppa-hunton",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "jubal-anderson-early": {
+    "leaderID": "jubal-anderson-early",
+    "fullName": "Jubal Anderson Early",
+    "displayName": "Early",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/jubal-anderson-early.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "064724a2d03aff7ecc4fb80f5572e628208207af40bf32398ca1a8e126ebfa40",
+    "references": [
+      {
+        "role": "primary facial identity",
+        "page_url": "https://www.loc.gov/pictures/item/2017897893/",
+        "image_url": "https://cdn.loc.gov/service/pnp/ds/01400/01484v.jpg",
+        "identification": "Confederate General Jubal Early, head-and-shoulders portrait, facing front; between 1860 and 1870, photographed later",
+        "credit": "Brady-Handy photograph collection, Library of Congress, Prints and Photographs Division",
+        "rights": "LOC: No known restrictions on publication"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/jubal-anderson-early",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "james-johnston-pettigrew": {
+    "leaderID": "james-johnston-pettigrew",
+    "fullName": "James Johnston Pettigrew",
+    "displayName": "Pettigrew",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/james-johnston-pettigrew.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "f3261aab7c70c3bf4926562894ebb943aad43a03034c75be56c0c4d30d6a9f32",
+    "references": [
+      {
+        "page_url": "https://commons.wikimedia.org/wiki/File:Portrait_of_General_James_Johnston_Pettigrew.jpg",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Portrait_of_General_James_Johnston_Pettigrew.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "referenceNote": "William Garl Browne Jr. painting, 1864; North Carolina Museum of History H.1914.287.1, reproduced via Wikimedia Commons.",
+    "resource": "CommanderPortraits/james-johnston-pettigrew",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "thomas-jonathan-jackson": {
+    "leaderID": "thomas-jonathan-jackson",
+    "fullName": "Thomas Jonathan Jackson",
+    "displayName": "T. J. Jackson",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/thomas-jonathan-jackson.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "7e4db907f51b492b3b229406a38b98772ace4fa030e869f9a7c881babe552d6d",
+    "references": [
+      {
+        "page_url": "https://commons.wikimedia.org/wiki/File:Jackson-Stonewall-LOC.jpg",
+        "image_url": "https://upload.wikimedia.org/wikipedia/commons/d/d6/Jackson-Stonewall-LOC.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/thomas-jonathan-jackson",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "joseph-eggleston-johnston": {
+    "leaderID": "joseph-eggleston-johnston",
+    "fullName": "Joseph Eggleston Johnston",
+    "displayName": "J. E. Johnston",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/joseph-eggleston-johnston.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "c2d1ec16ad5acc67863d0281043222e46085c95696f9eb9244bb45e8f9d1bd92",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/joseph-e-johnston.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/CB3047E1-A01A-DD67-586E059DCEE7DB42/CB3047E1-A01A-DD67-586E059DCEE7DB42.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/joseph-eggleston-johnston",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "albert-sidney-johnston": {
+    "leaderID": "albert-sidney-johnston",
+    "fullName": "Albert Sidney Johnston",
+    "displayName": "A. S. Johnston",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/albert-sidney-johnston.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "ae7a481e6074a09aa9137499eb9c33411961d80cee75c03bdc2df1b61913d669",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/albert-sidney-johnston.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/CB2E3C0A-96C3-442F-05804A896BF5812F/CB2E3C0A-96C3-442F-05804A896BF5812F.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/albert-sidney-johnston",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "pierre-gustave-toutant-beauregard": {
+    "leaderID": "pierre-gustave-toutant-beauregard",
+    "fullName": "Pierre Gustave Toutant Beauregard",
+    "displayName": "Beauregard",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/pierre-gustave-toutant-beauregard.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "01f3dcac9b0e7e954de92f5b23c358656fc8460f9661792353a61417e25ddbbc",
+    "references": [
+      {
+        "page_url": "https://home.nps.gov/people/pgt-beauregard.htm",
+        "image_url": "https://home.nps.gov/common/uploads/people/nri/20181110/people/EE12D4CF-94C6-536B-5C1109C2315DD87E/EE12D4CF-94C6-536B-5C1109C2315DD87E.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/pierre-gustave-toutant-beauregard",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "braxton-bragg": {
+    "leaderID": "braxton-bragg",
+    "fullName": "Braxton Bragg",
+    "displayName": "Bragg",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/braxton-bragg.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "926dbcaab7203a9f683bc7e5b004f257be4657b2cfc07be4e90ba0432f86a5c1",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/braxton-bragg.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/nri/20171109/people/585FDADB-1DD8-B71B-0B85D6A9766A64D9/585FDADB-1DD8-B71B-0B85D6A9766A64D9.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/braxton-bragg",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "sterling-price": {
+    "leaderID": "sterling-price",
+    "fullName": "Sterling Price",
+    "displayName": "Price",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/sterling-price.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "73f95d7566862f092da4e602bbbf6869b6e7b65cc42ad217ccdfe768de4c9f64",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/sterling-price.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/C914AEE9-085D-F57D-B7684ECFEF83514D/C914AEE9-085D-F57D-B7684ECFEF83514D.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/sterling-price",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "earl-van-dorn": {
+    "leaderID": "earl-van-dorn",
+    "fullName": "Earl Van Dorn",
+    "displayName": "Van Dorn",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/earl-van-dorn.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "6628340d2c2704a224bb06e7abfa9483249401c5cdc9cf5819a37909e4491e5a",
+    "references": [
+      {
+        "page_url": "https://home.nps.gov/people/earl-van-dorn.htm",
+        "image_url": "https://home.nps.gov/common/uploads/people/images/nri/subject/civilwar/CABAD720-FA67-E0C8-5F72A5F95059FE40/CABAD720-FA67-E0C8-5F72A5F95059FE40.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/earl-van-dorn",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "jefferson-davis": {
+    "leaderID": "jefferson-davis",
+    "fullName": "Jefferson Davis",
+    "displayName": "Jefferson Davis",
+    "faction": "Confederate",
+    "role": "President",
+    "portraitFile": "portraits/jefferson-davis.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "934e84379040e55cf5b2a7428b4f5088f00f8670ab671a976deba5e54429fe08",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/jefferson-davis.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/C80C22A4-CC8A-2755-572EDCF7A11F9258/C80C22A4-CC8A-2755-572EDCF7A11F9258.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/jefferson-davis",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "william-joseph-hardee": {
+    "leaderID": "william-joseph-hardee",
+    "fullName": "William Joseph Hardee",
+    "displayName": "Hardee",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/william-joseph-hardee.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "1dd4a8fd9a4dfbbc7cc6b90915b0f483938703ee731326140a7bd1671c162d3d",
+    "references": [
+      {
+        "page_url": "https://www.loc.gov/item/2021669721/",
+        "image_url": "https://tile.loc.gov/image-services/iiif/service:gdc:gdcwdl:wd:l_:02:13:9:wdl_02139:icon966367/full/pct:50/0/default.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "resource": "CommanderPortraits/william-joseph-hardee",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  },
+  "leonidas-polk": {
+    "leaderID": "leonidas-polk",
+    "fullName": "Leonidas Polk",
+    "displayName": "Polk",
+    "faction": "Confederate",
+    "role": "General",
+    "portraitFile": "portraits/leonidas-polk.png",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "sha256": "1f5b11d897bc5733ab629da0938b4645b753d1db6134d1be714ccb2f71606689",
+    "references": [
+      {
+        "page_url": "https://www.nps.gov/people/leonidas-polk.htm",
+        "image_url": "https://www.nps.gov/common/uploads/people/images/nri/subject/civilwar/C8ED037B-A44C-E742-17C916EF952764F2/C8ED037B-A44C-E742-17C916EF952764F2.jpg",
+        "role": "facial likeness reference"
+      }
+    ],
+    "accuracyNote": "Source-informed illustrated interpretation; colors, faction accents, and simplified clothing are artistic choices, not a photograph or claim of exact historical accuracy.",
+    "referenceNote": "Facial likeness follows the NPS/Library of Congress portrait of Polk in clerical clothing; the illustrated game portrait uses a simplified military coat.",
+    "resource": "CommanderPortraits/leonidas-polk",
+    "localSource": "User-supplied twelve-part Downloads collection, 2026-10-01"
+  }
+}
