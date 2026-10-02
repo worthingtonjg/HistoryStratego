@@ -139,6 +139,21 @@ export function destinations(m, side, from) {
 		to, attack: !!m.board[to]
 	}));
 }
+const selectionCache = new WeakMap();
+// Reuse the authoritative movement rules once per position. No enemy ranks leave view().
+export function selectionOptions(m, side) {
+ if (m.phase !== 'play' || m.archived || m.reveal || m.turn !== side || m.events.some(e => e.kind === 'combat' && !e.ack[side])) return [];
+ let cached = selectionCache.get(m);
+ if (!cached || cached.seq !== m.seq || cached.side !== side) {
+  const options = [];
+  for (let from = 0; from < 100; from++) {
+   const p = m.board[from];
+   if (p?.side === side && p.rank !== 'B' && p.rank !== 'F') options.push({from,side,seq:m.seq,targets:destinations(m,side,from)});
+  }
+  cached = {seq:m.seq,side,options}; selectionCache.set(m,cached);
+ }
+ return cached.options;
+}
 export function select(m, side, from, seq) {
 	check(!m.events.some(e => e.kind === 'combat' && !e.ack[side]), 'Review your pending combat first');
 	check(!m.reveal && m.phase === 'play' && m.turn === side, 'Selection is unavailable');
@@ -172,7 +187,7 @@ export function view(m, side, { spectator = false } = {}) {
 	return {
 		id: m.id, phase: m.archived ? 'over' : m.phase, turn: m.turn, seq: m.seq, winner: m.winner, side, ready: m.ready, blocked: !!m.reveal, battle: battle ? {
 			...battle
-		} : null, selection: m.selection && (spectator || side === m.turn) ? m.selection : null, board: m.board.map(p => p ? {
+		} : null, selection: m.selection && (spectator || side === m.turn) ? m.selection : null, selectionOptions: spectator ? [] : selectionOptions(m, side), board: m.board.map(p => p ? {
 			side: p.side, rank: p.side === side ? p.rank : '?'
 		} : null), events: m.events.map(e => ({
 			...e, moving: spectator || e.side === side || e.kind === 'combat' ? e.moving : '?', targets: spectator || e.side === side ? e.targets : []

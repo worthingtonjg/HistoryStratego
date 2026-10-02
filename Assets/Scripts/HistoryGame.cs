@@ -88,6 +88,7 @@ public class MatchView
 	public PieceView[] board;
 	public Dispatch[] events;
 	public SelectionView selection;
+	public SelectionView[] selectionOptions;
 	public Dispatch battle;
 	public bool blocked, setupBlocked;
 	public TurnClockView turnClock;
@@ -227,12 +228,16 @@ public class HistoryGame : MonoBehaviour
 	}
 
 	readonly PollActionGate<UiAction> uiActions = new PollActionGate<UiAction>();
-	string[] swapBefore;
+	FormationSwapPreview swapPreview;
 	string swapMatch;
-	int swapFrom, swapTo, swapRevision, swapSide;
-	float swapStarted;
-	bool SwapAnimating => swapBefore != null && !teacherMode && state?.phase == "active" && state.match?.id == swapMatch && state.match.phase == "setup" && !state.match.ready[swapSide] && state.match.setup?.revision == swapRevision && !DeadlineBlocked(state.match) && Time.unscaledTime - swapStarted < .35f;
-	bool ActionBusy => uiActions.BlocksInput || SwapAnimating;
+	int swapSide;
+	bool SwapContextValid => !teacherMode && state?.phase == "active" && state.match?.id == swapMatch && state.match.phase == "setup" && !state.match.ready[swapSide] && state.match.setup != null && SetupRemaining(state.match) > 0 && !DeadlineBlocked(state.match);
+	bool ActionBusy => uiActions.BlocksInput || (swapPreview?.BlocksInput(Time.unscaledTime) ?? false);
+	void ClearSwapPreview()
+	{
+		swapPreview = null;
+		tabletop?.InvalidatePositions();
+	}
 
 	Vector2 commanderScroll;
 	int selected = -1, factIndex;
@@ -304,7 +309,8 @@ public class HistoryGame : MonoBehaviour
 	readonly CombatClickGate tipClick = new CombatClickGate();
 	string paintedTip = "";
 	float tipDismissUntil;
-	Command pendingCombatAck, pendingManualSelect;
+	Command pendingCombatAck, pendingManualSelect, pendingMoveIntent;
+	string activeRoute = "";
 	int manualSelectionRequested = -1;
 	float combatDismissUntil;
 	readonly HashSet<string> dispatchStarted = new HashSet<string>();
@@ -490,13 +496,33 @@ public class HistoryGame : MonoBehaviour
 
 	void Update()
 	{
+		if (swapPreview != null && (!SwapContextValid || !swapPreview.BlocksInput(Time.unscaledTime))) ClearSwapPreview();
 		if (!busy && uiActions.Pending != null)
 		{
 			var action = uiActions.Take();
 			if (QueuedActionValid(action))
 				Send(action.route, action.command);
 			else
+			{
+				if (action.route == "setup/swap") ClearSwapPreview();
 				error = "The classroom changed before that action could be sent. Please try again.";
+			}
+		}
+
+		if (pendingMoveIntent != null && !busy)
+		{
+			var intent = pendingMoveIntent;
+			pendingMoveIntent = null;
+			var match = teacherMode ? null : StudentMatch();
+			var option = match != null ? CachedSelection(match, intent.from) : null;
+			if (match?.id == intent.matchId && match.seq == intent.seq && option?.targets != null && Array.Exists(option.targets, target => target.to == intent.to))
+			{
+				pendingManualSelect = null;
+				manualSelectionRequested = -1;
+				pending = intent;
+				Send("move", pending);
+			}
+			else error = "The position changed before your move could be sent. Please choose again.";
 		}
 
 		if (pendingManualSelect != null && !busy)
@@ -603,6 +629,7 @@ public class HistoryGame : MonoBehaviour
 	IEnumerator Request(string route, Command command)
 	{
 		bool routine = RoutineRequest(route, command);
+		activeRoute = route;
 		uiActions.Begin(routine);
 		actionStatus = routine ? "" : "Sending action...";
 		busy = true;
@@ -616,6 +643,7 @@ public class HistoryGame : MonoBehaviour
 			yield return req.SendWebRequest();
 			if (req.result != UnityWebRequest.Result.Success)
 			{
+				if (swapPreview != null) ClearSwapPreview();
 				if (route == "ack")
 				{
 					combatClick.Retry();
@@ -667,7 +695,6 @@ public class HistoryGame : MonoBehaviour
 			}
 			else
 			{
-				var previousMatch = state?.match;
 				state = JsonUtility.FromJson<StudentView>(req.downloadHandler.text);
 				if (state.match?.setup != null && !state.match.setup.enabled)
 					state.match.setup = null;
@@ -708,21 +735,10 @@ public class HistoryGame : MonoBehaviour
 
 				if (state.match?.setup?.draft?.Length == 40)
 					formation = (string[])state.match.setup.draft.Clone();
-				if (swapBefore != null && !SwapAnimating)
+				if (swapPreview != null)
 				{
-					swapBefore = null;
-					tabletop?.InvalidatePositions();
-				}
-				if (route == "setup/swap" && state.phase == "active" && state.match?.phase == "setup" && previousMatch?.id == state.match.id && !state.match.ready[state.match.side] && FormationExchange.Confirmed(previousMatch.setup?.draft, state.match.setup?.draft, command.from, command.to, command.revision, state.match.setup.revision))
-				{
-					swapBefore = (string[])previousMatch.setup.draft.Clone();
-					swapMatch = state.match.id;
-					swapSide = state.match.side;
-					swapRevision = state.match.setup.revision;
-					swapFrom = command.from;
-					swapTo = command.to;
-					swapStarted = Time.unscaledTime;
-					boostUntil = Time.unscaledTime + .5f;
+					swapPreview.Observe(state.match?.setup?.draft, state.match?.setup?.revision ?? -1, SwapContextValid);
+					if (!swapPreview.Active || (route == "setup/swap" && swapPreview.Pending) || !swapPreview.BlocksInput(Time.unscaledTime)) ClearSwapPreview();
 				}
 				if (route.StartsWith("setup/"))
 					selected = -1;
@@ -741,6 +757,7 @@ public class HistoryGame : MonoBehaviour
 			manualSelectionRequested = -1;
 		busy = false;
 		uiActions.Complete();
+		activeRoute = "";
 		actionStatus = "";
 	}
 
@@ -1423,18 +1440,17 @@ public class HistoryGame : MonoBehaviour
 				latest = message;
 		}
 
-		float turnElapsed = Time.unscaledTime - turnNoticeStart;
-		if (latest == null || m.phase != "play" || m.battle?.kind == "combat" || DeadlineBlocked(m) || commanderOpen || reminderVisible || tipVisible || (!teacherMode && turnElapsed >= 0 && turnElapsed < 2))
+		if (latest == null || m.phase != "play" || DeadlineBlocked(m) || commanderOpen)
 			return;
 		var commander = m.commanders != null && latest.side < m.commanders.Length ? m.commanders[latest.side] : null;
 		string name = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : PlayerName(m, latest.side);
 		float alpha = Mathf.Min(1, (presetUntil[latest.side] - Time.unscaledTime) / .35f);
 		GUI.color = new Color(.025f, .045f, .065f, .96f * alpha);
-		GUI.DrawTexture(new Rect(160, 335, 880, 180), Texture2D.whiteTexture);
+		GUI.DrawTexture(new Rect(285, 18, 890, 128), Texture2D.whiteTexture);
 		GUI.color = new Color(1, 1, 1, alpha);
 		var portrait = commander != null ? CommanderPortrait(commander.id) : null;
 		if (portrait != null)
-			GUI.DrawTexture(new Rect(180, 355, 140, 140), portrait, ScaleMode.ScaleToFit);
+			GUI.DrawTexture(new Rect(300, 32, 108, 108), portrait, ScaleMode.ScaleToFit);
 		var nameStyle = new GUIStyle(GUI.skin.label)
 		{
 			fontSize = 25,
@@ -1442,9 +1458,9 @@ public class HistoryGame : MonoBehaviour
 			alignment = TextAnchor.MiddleLeft
 		};
 		GUI.contentColor = TurnColor(latest.side);
-		GUI.Label(new Rect(345, 353, 670, 42), HeaderName.Fit(name, 650, text => nameStyle.CalcSize(new GUIContent(text)).x), nameStyle);
+		GUI.Label(new Rect(430, 27, 720, 42), HeaderName.Fit(name, 700, text => nameStyle.CalcSize(new GUIContent(text)).x), nameStyle);
 		GUI.contentColor = Color.white;
-		GUI.Label(new Rect(345, 397, 670, 95), "\"" + latest.text + "\"", new GUIStyle(GUI.skin.label) { fontSize = 30, alignment = TextAnchor.MiddleLeft, wordWrap = true });
+		GUI.Label(new Rect(430, 72, 720, 70), "\"" + latest.text + "\"", new GUIStyle(GUI.skin.label) { fontSize = 26, alignment = TextAnchor.MiddleLeft, wordWrap = true });
 		GUI.color = Color.white;
 	}
 
@@ -2161,20 +2177,25 @@ public class HistoryGame : MonoBehaviour
 			boostUntil = Time.unscaledTime + .2f;
 	}
 
+	SelectionView CachedSelection(MatchView m, int from)
+	{
+		if (teacherMode || state?.phase != "active" || m.phase != "play" || m.turn != m.side || m.blocked || m.setupBlocked || m.battle?.kind == "combat" || DeadlineBlocked(m) || apiStatus != "" || motion != null) return null;
+		return Array.Find(m.selectionOptions ?? Array.Empty<SelectionView>(), option => option.from == from && option.side == m.side && option.seq == m.seq);
+	}
 	void DrawBoard(MatchView m, bool editing, bool readOnly)
 	{
 		Track(m);
 		if (tabletop == null)
 			tabletop = new GameObject("Tabletop view").AddComponent<TabletopBoard>();
-		bool swapping = !readOnly && SwapAnimating;
-		if (swapBefore != null && !swapping) { swapBefore = null; tabletop.InvalidatePositions(); }
+		bool swapping = !readOnly && swapPreview != null && swapPreview.Active && SwapContextValid;
+		if (swapPreview != null && !swapping) ClearSwapPreview();
 		var b = (PieceView[])m.board.Clone();
 		if (!readOnly && m.phase == "setup" && !m.ready[m.side])
 			for (int k = 0; k < 40; k++)
 				b[m.side == 0 ? 60 + k : 39 - k] = new PieceView
 				{
 					side = m.side,
-					rank = swapping ? swapBefore[k] : formation[k]
+					rank = swapping ? swapPreview.Before[k] : formation[k]
 				};
 		if (shownSeq != m.seq)
 		{
@@ -2231,7 +2252,13 @@ public class HistoryGame : MonoBehaviour
 		if (!readOnly && manualSelectionRequested >= 0)
 		{
 			highlight = manualSelectionRequested;
+			var preview = CachedSelection(m, manualSelectionRequested);
 			hints = m.selection?.from == manualSelectionRequested ? hints : null;
+			if (preview != null)
+			{
+				hints = new bool[100];
+				foreach (var target in preview.targets) hints[target.to] = true;
+			}
 		}
 
 		if (!readOnly && ownInspection.Index(m) != -1)
@@ -2246,8 +2273,8 @@ public class HistoryGame : MonoBehaviour
 			tabletop.AnimateMove(motion.from, motion.to, rotate, travel * (motion.kind == "combat" ? .7f : 1));
 		if (swapping)
 		{
-			int a = m.side == 0 ? 60 + swapFrom : 39 - swapFrom, z = m.side == 0 ? 60 + swapTo : 39 - swapTo;
-			tabletop.AnimateSwap(a, z, rotate, (Time.unscaledTime - swapStarted) / .35f);
+			int a = m.side == 0 ? 60 + swapPreview.From : 39 - swapPreview.From, z = m.side == 0 ? 60 + swapPreview.To : 39 - swapPreview.To;
+			tabletop.AnimateSwap(a, z, rotate, swapPreview.Progress(Time.unscaledTime));
 		}
 		GUI.DrawTexture(boardRect, texture, ScaleMode.StretchToFill, true);
 		if (!commanderOpen && !readOnly && !EndgamePresentation.Terminal(m.phase, state.phase) && motion == null && m.battle?.kind != "combat" && !m.blocked && Event.current.type == EventType.MouseDown && Event.current.button == 0)
@@ -2272,6 +2299,7 @@ public class HistoryGame : MonoBehaviour
 		var m = state.match;
 		if (DeadlineBlocked(m))
 			return;
+		if (pendingMoveIntent != null) return;
 		if (editing)
 		{
 			if (ActionBusy)
@@ -2286,8 +2314,15 @@ public class HistoryGame : MonoBehaviour
 				int a = m.side == 0 ? selected - 60 : 39 - selected;
 				if (m.setup != null)
 				{
-					if (a != k)
+					if (a != k && state.phase == "active" && m.setup.started && SetupRemaining(m) > 0 && apiStatus == "")
+					{
+						swapPreview = new FormationSwapPreview(formation, a, k, m.setup.revision, Time.unscaledTime);
+						swapMatch = m.id;
+						swapSide = m.side;
+						boostUntil = Time.unscaledTime + .5f;
+						if (Application.absoluteURL.Contains("qa=1")) Debug.Log("SETUP_SWAP_PREVIEW");
 						Send("setup/swap", new Command { matchId = m.id, from = a, to = k, revision = m.setup.revision });
+					}
 				}
 				else
 					(formation[a], formation[k]) = (formation[k], formation[a]);
@@ -2320,12 +2355,23 @@ public class HistoryGame : MonoBehaviour
 			ownInspection.Clear();
 		if (busy)
 		{
+			int from = manualSelectionRequested >= 0 ? manualSelectionRequested : selected >= 0 ? selected : m.selection?.from ?? -1;
+			var option = CachedSelection(m, from);
+			if ((uiActions.Reading || activeRoute == "select") && (p == null || p.side != m.side) && option?.targets != null && Array.Exists(option.targets, target => target.to == i))
+			{
+				pendingMoveIntent = new Command { matchId = m.id, from = from, to = i, seq = m.seq, requestId = Guid.NewGuid().ToString() };
+				autoSelectionCandidates = null;
+				RememberSelectionTurn(m);
+				if (Application.absoluteURL.Contains("qa=1")) Debug.Log("MOVE_INTENT_QUEUED");
+				return;
+			}
 			if (!editing && state.phase == "active" && m.phase == "play" && m.turn == m.side && !DeadlineBlocked(m) && !m.blocked && m.battle?.kind != "combat" && p != null && p.side == m.side && p.rank != "F" && p.rank != "B")
 			{
 				autoSelectionCandidates = null;
 				RememberSelectionTurn(m);
 				selected = i;
 				manualSelectionRequested = i;
+				if (Application.absoluteURL.Contains("qa=1") && CachedSelection(m, i) != null) Debug.Log("SELECTION_PREVIEW");
 				pendingManualSelect = new Command
 				{
 					from = i,
@@ -2347,11 +2393,13 @@ public class HistoryGame : MonoBehaviour
 				return;
 			selected = i;
 			manualSelectionRequested = i;
+			if (Application.absoluteURL.Contains("qa=1") && CachedSelection(m, i) != null) Debug.Log("SELECTION_PREVIEW");
 			Send("select", new Command { from = i, seq = m.seq });
 			return;
 		}
 
-		if (selected < 0 || m.selection?.targets == null || !Array.Exists(m.selection.targets, t => t.to == i))
+		var available = CachedSelection(m, selected) ?? (m.selection?.from == selected ? m.selection : null);
+		if (selected < 0 || available?.targets == null || !Array.Exists(available.targets, t => t.to == i))
 			return;
 		if (pending == null || pending.from != selected || pending.to != i || pending.seq != m.seq)
 			pending = new Command
@@ -2488,7 +2536,8 @@ public class HistoryGame : MonoBehaviour
 	void HandleCombatInput()
 	{
 		var input = Event.current;
-		if (Time.unscaledTime < combatDismissUntil && input.button == 0 && (input.type == EventType.MouseDown || input.type == EventType.MouseUp || input.type == EventType.MouseDrag))
+		bool inside = boardRect.Contains(GUI.matrix.inverse.MultiplyPoint(rawPointer));
+		if (inside && Time.unscaledTime < combatDismissUntil && input.button == 0 && (input.type == EventType.MouseDown || input.type == EventType.MouseUp || input.type == EventType.MouseDrag))
 		{
 			input.Use();
 			return;
@@ -2508,7 +2557,7 @@ public class HistoryGame : MonoBehaviour
 			Debug.Log("COMBAT_INPUT " + Event.current.type + " ready=" + eligible + " count=" + input.clickCount + " motion=" + (motion != null) + " queued=" + motions.Count);
 		if (input.button != 0 || (input.type != EventType.MouseDown && input.type != EventType.MouseUp))
 			return;
-		bool inside = rawPointer.x >= 0 && rawPointer.y >= 0 && rawPointer.x < Screen.width && rawPointer.y < Screen.height;
+		if (!inside) { if (input.type == EventType.MouseUp) combatClick.Release(false); return; }
 		if (input.type == EventType.MouseDown)
 			combatClick.Press(input.clickCount, eligible && inside);
 		else if (combatClick.Release(eligible && inside))
@@ -2544,20 +2593,21 @@ public class HistoryGame : MonoBehaviour
 		float elapsed = Time.unscaledTime - battleStart, progress = Mathf.Clamp01(elapsed / 2.3f);
 		if (progress < 1)
 			boostUntil = Time.unscaledTime + .2f;
+		GUI.BeginGroup(boardRect);
 		GUI.color = new Color(.035f, .06f, .075f, 1);
-		GUI.DrawTexture(new Rect(25, 178, 1150, 555), Texture2D.whiteTexture);
+		GUI.DrawTexture(new Rect(0, 0, 865, 555), Texture2D.whiteTexture);
 		GUI.color = Color.white;
-		GUI.Box(new Rect(25, 178, 1150, 555), "");
+		GUI.Box(new Rect(0, 0, 865, 555), "");
 		var header = new GUIStyle(GUI.skin.label)
 		{
 			fontSize = 24,
 			fontStyle = FontStyle.Bold,
 			alignment = TextAnchor.MiddleCenter
 		};
-		GUI.Label(new Rect(70, 195, 1060, 60), BattleCaption.Describe(PlayerName(m, e.side), PlayerName(m, 1 - e.side), e.attacker, e.defender, e.outcome), header);
-		BattleRole(new Rect(130, 270, 435, 58), "ATTACKER | " + SideName(m, e.side) + "\n" + Label(e.attacker), e.side);
-		BattleRole(new Rect(635, 270, 435, 58), "DEFENDER | " + SideName(m, 1 - e.side) + "\n" + Label(e.defender), 1 - e.side);
-		GUI.DrawTexture(new Rect(115, 340, 970, 210), battleStage.Battle(e, progress), ScaleMode.ScaleToFit, false);
+		GUI.Label(new Rect(20, 10, 825, 60), BattleCaption.Describe(PlayerName(m, e.side), PlayerName(m, 1 - e.side), e.attacker, e.defender, e.outcome), header);
+		BattleRole(new Rect(20, 76, 397, 58), "ATTACKER | " + SideName(m, e.side) + "\n" + Label(e.attacker), e.side);
+		BattleRole(new Rect(447, 76, 398, 58), "DEFENDER | " + SideName(m, 1 - e.side) + "\n" + Label(e.defender), 1 - e.side);
+		GUI.DrawTexture(new Rect(30, 140, 805, 200), battleStage.Battle(e, progress), ScaleMode.ScaleToFit, false);
 		string quote = Banter(m, e), speaker = CutscenePresentation.Speaker(quote, e.attacker, e.defender, e.outcome, PlayerName(m, e.outcome > 0 ? e.side : 1 - e.side));
 		var quip = new GUIStyle(GUI.skin.label)
 		{
@@ -2572,15 +2622,15 @@ public class HistoryGame : MonoBehaviour
 			wordWrap = true
 		};
 		string quotation = BattleBanter.Category(e.attacker, e.defender, e.outcome) == "six-seven" ? quote : "\"" + quote + "\"";
-		float quoteHeight = quip.CalcHeight(new GUIContent(quotation), 930);
-		float creditHeight = speaker == "" ? 0 : credit.CalcHeight(new GUIContent("- " + speaker), 930);
+		float quoteHeight = quip.CalcHeight(new GUIContent(quotation), 765);
+		float creditHeight = speaker == "" ? 0 : credit.CalcHeight(new GUIContent("- " + speaker), 765);
 		while (quoteHeight + creditHeight + 28 > 132 && quip.fontSize > 16)
 		{
 			quip.fontSize--;
-			quoteHeight = quip.CalcHeight(new GUIContent(quotation), 930);
+			quoteHeight = quip.CalcHeight(new GUIContent(quotation), 765);
 		}
 
-		var quoteBox = new Rect(115, 554, 970, Mathf.Max(102, quoteHeight + creditHeight + 28));
+		var quoteBox = new Rect(30, 350, 805, Mathf.Min(150, Mathf.Max(102, quoteHeight + creditHeight + 28)));
 		GUI.color = new Color(.055f, .08f, .09f);
 		GUI.DrawTexture(quoteBox, Texture2D.whiteTexture);
 		GUI.color = accent;
@@ -2589,11 +2639,12 @@ public class HistoryGame : MonoBehaviour
 		GUI.DrawTexture(new Rect(quoteBox.x, quoteBox.y, 2, quoteBox.height), Texture2D.whiteTexture);
 		GUI.DrawTexture(new Rect(quoteBox.xMax - 2, quoteBox.y, 2, quoteBox.height), Texture2D.whiteTexture);
 		GUI.color = Color.white;
-		GUI.Label(new Rect(135, quoteBox.y + 10, 930, quoteHeight), quotation, quip);
+		GUI.Label(new Rect(50, quoteBox.y + 10, 765, quoteHeight), quotation, quip);
 		if (speaker != "")
-			GUI.Label(new Rect(135, quoteBox.y + quoteHeight + 17, 930, creditHeight), "- " + speaker, credit);
+			GUI.Label(new Rect(50, quoteBox.y + quoteHeight + 17, 765, creditHeight), "- " + speaker, credit);
 		if (!readOnly && (e.ack[m.side] || elapsed >= 2.3f))
-			GUI.Label(new Rect(115, quoteBox.yMax + 10, 970, 30), e.ack[m.side] ? "Waiting for the other player to continue..." : state.phase == "paused" ? "Paused by teacher" : apiStatus != "" ? "Waiting for classroom connection" : m.battleContinue?.supported == true ? "Click anywhere to continue | auto in " + Math.Ceiling(m.battleContinue.remainingMs / 1000) + "s" : !pageReadable ? "Auto-continue paused - return to the game window" : "Click anywhere to continue | auto in " + Math.Ceiling(Math.Max(0, 5 - revealTiming.Elapsed)) + "s", new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter });
+			GUI.Label(new Rect(30, 518, 805, 30), e.ack[m.side] ? "Waiting for the other player to continue..." : state.phase == "paused" ? "Paused by teacher" : apiStatus != "" ? "Waiting for classroom connection" : m.battleContinue?.supported == true ? "Click the battle panel to continue | auto in " + Math.Ceiling(m.battleContinue.remainingMs / 1000) + "s" : !pageReadable ? "Auto-continue paused - return to the game window" : "Click the battle panel to continue | auto in " + Math.Ceiling(Math.Max(0, 5 - revealTiming.Elapsed)) + "s", new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter });
+		GUI.EndGroup();
 	}
 
 	void SyncPresence(string phase, PresenceConfig config)

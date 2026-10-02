@@ -35,7 +35,7 @@ test('spectator has only observation/navigation; players retain manual Continue 
 	assert(spectator.includes('Switch to '));
 	assert(containsCode(s, 'if (!readOnly && (e.ack[m.side] || elapsed >= 2.3f))'));
 	assert(containsCode(s, 'var m = teacherMode ? null : StudentMatch();'));
-	assert(s.includes('Click anywhere to continue'));
+	assert(s.includes('Click the battle panel to continue'));
 	assert(!containsCode(s, 'Button(375,655,450,"Continue")'));
 	assert(containsCode(s, 'Label(e.attacker),e.side'));
 	assert(containsCode(s, 'Label(e.defender),1-e.side'));
