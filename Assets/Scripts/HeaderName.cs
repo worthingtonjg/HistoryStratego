@@ -8,7 +8,7 @@ public static class HeaderName
 		name = name ?? "";
 		if (measure(name) <= width)
 			return name;
-		const string ellipsis = "�";
+		const string ellipsis = "...";
 		if (measure(ellipsis) > width)
 			return "";
 		int[] starts = StringInfo.ParseCombiningCharacters(name);

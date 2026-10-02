@@ -1182,10 +1182,12 @@ public class HistoryGame : MonoBehaviour
 		var m = spectator.match;
 		DrawMatchHeader(m, spectator.phase);
 		GUI.Label(new Rect(245, 151, 220, 24), "Read-only | Fixed board");
-		if (GUI.Button(new Rect(475, 150, 330, 24), "Watch " + SideName(m, 0)))
-			Send("teacher/spectate", new Command { matchId = m.id, perspective = "red" });
-		if (GUI.Button(new Rect(820, 150, 345, 24), "Watch " + SideName(m, 1)))
-			Send("teacher/spectate", new Command { matchId = m.id, perspective = "blue" });
+		int targetSide = m.side == 0 ? 1 : 0;
+		bool previousEnabled = GUI.enabled;
+		GUI.enabled = previousEnabled && !busy && (m.side == 0 || m.side == 1);
+		if (GUI.Button(new Rect(475, 150, 690, 24), "Switch to " + SideName(m, targetSide)))
+			Send("teacher/spectate", new Command { matchId = m.id, perspective = targetSide == 0 ? "red" : "blue" });
+		GUI.enabled = previousEnabled;
 		DrawBoard(m, false, true);
 		DrawSidebar(m, false);
 	}
