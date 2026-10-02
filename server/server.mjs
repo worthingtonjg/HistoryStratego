@@ -86,7 +86,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		call(route, b = {}, token = '') {
 			if (route === 'emote') {
 				const p = auth(token), m = find(p);
-				if (!m || b.matchId !== m.id || phase !== 'active' || m.phase !== 'play' || m.reveal || m.events.some(e => e.kind === 'combat' && e.ack?.some(ack => !ack)) || setupBlocked(m) || m.turnClock?.notice)
+				if (!m || b.matchId !== m.id || phase !== 'active' || (m.phase !== 'play' && !m.reveal && !m.events.some(e => e.kind === 'combat' && e.ack?.some(ack => !ack))) || setupBlocked(m) || m.turnClock?.notice)
 					throw Error('Messages are available during active play');
 				sendPreset(emoteRecords, m, m.players.indexOf(p.id), b.emoteId, now());
 				return state(p, false);

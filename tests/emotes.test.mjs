@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createAuthority } from '../server/server.mjs';
-import { army } from '../server/game.mjs';
+import { army, move } from '../server/game.mjs';
 function fixture() {
 	let time = 100000;
 	const a = createAuthority({
@@ -58,7 +58,7 @@ test('both players and read-only spectator receive bounded public messages witho
 	advance(4000);
 	assert.equal(a.call('state', {}, p[0].token).match.emotes.length, 0);
 });
-test('wrong match, pause, setup and combat reject messages; spectators cannot impersonate a player', () => {
+test('wrong match, pause and setup reject messages; spectators cannot impersonate a player', () => {
 	const { a, p, m } = fixture();
 	const body = {
 		matchId: m.id, emoteId: 'trap'
@@ -72,8 +72,7 @@ test('wrong match, pause, setup and combat reject messages; spectators cannot im
 	m.phase = 'setup';
 	assert.throws(() => a.call('emote', body, p[0].token));
 	m.phase = 'play';
-	m.reveal = {};
-	assert.throws(() => a.call('emote', body, p[0].token));
+
 	assert.throws(() => a.call('teacher/emote', body, 'teacher'));
 });
 import { createAuthority as createBrowserAuthority } from '../browser/engine/authority.mjs';
@@ -135,4 +134,16 @@ test('non-active player can send a preset and cannot forge the sender identity',
 	assert.equal(result.match.emotes[0].side, side);
 	assert.equal(result.match.emotes[0].text, 'Well played!');
 	assert.equal(JSON.stringify(m), before);
+});
+
+for(const defender of ['4','F']) test('combat permits both players presets without ack, move or clock mutation: '+defender,()=>{
+ const {a,p,m}=fixture();m.board[60]={id:'attacker',side:0,rank:'6'};m.board[50]={id:'defender',side:1,rank:defender};
+ move(m,0,60,50,m.seq,'combat-fixture');const before=JSON.stringify(m);
+ for(const player of p){
+  const body={matchId:m.id,emoteId:'well_played'};const response=a.call('emote',body,player.token);
+  assert(response.match.emotes.some(e=>e.text==='Well played!'));assert.equal(response.match.emoteCooldownMs,10000);
+  assert.throws(()=>a.call('emote',body,player.token),/Wait/);
+ }
+ assert.equal(JSON.stringify(m),before);assert.deepEqual(m.reveal.ack,[false,false]);
+ a.call('teacher/pause',{},'teacher');assert.throws(()=>a.call('emote',{matchId:m.id,emoteId:'bold'},p[0].token),/active play/);
 });

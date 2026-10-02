@@ -608,7 +608,7 @@ public class HistoryGame : MonoBehaviour
 		}
 
 		if (action.route == "emote")
-			return m != null && m.id == action.command.matchId && state.phase == "active" && m.phase == "play" && !m.blocked && m.battle?.kind != "combat" && !DeadlineBlocked(m);
+			return m != null && m.id == action.command.matchId && state.phase == "active" && (m.phase == "play" || m.battle?.kind == "combat") && !DeadlineBlocked(m);
 		return true;
 	}
 
@@ -1381,10 +1381,16 @@ public class HistoryGame : MonoBehaviour
 			hint = m.turnClock.noticeRemainingMs > 0 ? "Automatic move pending." : (m.turn == m.side ? "Your turn" : PlayerName(m, m.turn) + " to move") + " | " + Math.Ceiling(m.turnClock.remainingMs / 1000) + " seconds";
 		GUI.Label(new Rect(30, 151, 1130, 24), hint);
 		DrawBoard(m, editing, false);
+		var menuInput = Event.current;
+		var priorType = menuInput.type;
+		bool menuOwnsPointer = presetMenuOpen && presetMenuBounds.Contains(GUI.matrix.inverse.MultiplyPoint(rawPointer)) && (menuInput.isMouse || priorType == EventType.ScrollWheel);
+		if (menuOwnsPointer) menuInput.type = EventType.Ignore;
 		DrawSidebar(m, editing);
+		if (menuOwnsPointer) menuInput.type = priorType;
 		DrawPresetMenu(m);
 	}
 
+	readonly Rect presetMenuBounds = new Rect(895, 532, 285, 201);
 	bool presetMenuOpen;
 	string presetMatch = "";
 	readonly string[] presetKeys =
@@ -1440,7 +1446,7 @@ public class HistoryGame : MonoBehaviour
 				latest = message;
 		}
 
-		if (latest == null || m.phase != "play" || DeadlineBlocked(m) || commanderOpen)
+		if (latest == null || (m.phase != "play" && m.battle?.kind != "combat") || DeadlineBlocked(m) || commanderOpen)
 			return;
 		var commander = m.commanders != null && latest.side < m.commanders.Length ? m.commanders[latest.side] : null;
 		string name = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : PlayerName(m, latest.side);
@@ -1466,7 +1472,7 @@ public class HistoryGame : MonoBehaviour
 
 	void DrawPresetMenu(MatchView m)
 	{
-		bool allowed = !teacherMode && state.phase == "active" && m.phase == "play" && !m.blocked && m.battle?.kind != "combat" && !DeadlineBlocked(m) && !commanderOpen && apiStatus == "";
+		bool allowed = !teacherMode && state.phase == "active" && (m.phase == "play" || m.battle?.kind == "combat") && !DeadlineBlocked(m) && !commanderOpen && apiStatus == "";
 		if (!allowed)
 		{
 			presetMenuOpen = false;
@@ -1474,13 +1480,18 @@ public class HistoryGame : MonoBehaviour
 		}
 
 		double remaining = Math.Max(0, m.emoteCooldownMs - (Time.unscaledTime - setupReceivedAt) * 1000);
+		Color savedColor = GUI.color, savedContent = GUI.contentColor, savedBackground = GUI.backgroundColor;
+		GUI.color = GUI.contentColor = GUI.backgroundColor = Color.white;
 		bool enabled = GUI.enabled;
 		GUI.enabled = enabled && !ActionBusy && remaining <= 0;
 		if (GUI.Button(new Rect(895, 740, 285, 30), remaining > 0 ? "Messages ready in " + Math.Ceiling(remaining / 1000) + "s" : presetMenuOpen ? "Close messages" : "Send a friendly message"))
 			presetMenuOpen = !presetMenuOpen;
 		if (presetMenuOpen)
 		{
-			GUI.Box(new Rect(895, 532, 285, 201), "");
+			GUI.color = new Color(.025f, .045f, .065f, 1);
+			GUI.DrawTexture(presetMenuBounds, Texture2D.whiteTexture);
+			GUI.color = Color.white;
+			GUI.Box(presetMenuBounds, "");
 			for (int i = 0; i < presetKeys.Length; i++)
 				if (GUI.Button(new Rect(905, 541 + i * 30, 265, 26), presetLabels[i]))
 				{
@@ -1490,7 +1501,9 @@ public class HistoryGame : MonoBehaviour
 				}
 		}
 
+		if (presetMenuOpen && presetMenuBounds.Contains(GUI.matrix.inverse.MultiplyPoint(rawPointer)) && (Event.current.isMouse || Event.current.type == EventType.ScrollWheel)) Event.current.Use();
 		GUI.enabled = enabled;
+		GUI.color = savedColor; GUI.contentColor = savedContent; GUI.backgroundColor = savedBackground;
 	}
 
 	void LinkPointer(Rect rect)
