@@ -165,7 +165,9 @@ public class TabletopBoard : MonoBehaviour
 		if (artShader != null && artShader.isSupported)
 		{
 			m = new Material(artShader);
+			art.wrapMode = TextureWrapMode.Clamp;
 			m.mainTexture = art;
+			if (rank == "B" || rank == "F") m.SetFloat("_ArtBottom", .14f);
 			mats[key] = m;
 			return m;
 		}
