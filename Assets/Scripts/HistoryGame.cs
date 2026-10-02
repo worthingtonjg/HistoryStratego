@@ -219,6 +219,15 @@ public class HistoryGame : MonoBehaviour
 	string watchId = "";
 	Vector2 matchScroll;
 	bool busy, teacherMode, commanderOpen;
+	class UiAction
+	{
+		public string route;
+		public Command command;
+	}
+
+	readonly PollActionGate<UiAction> uiActions = new PollActionGate<UiAction>();
+	bool ActionBusy => uiActions.BlocksInput;
+
 	Vector2 commanderScroll;
 	int selected = -1, factIndex;
 	float nextPoll, nextFact = 20;
@@ -475,6 +484,15 @@ public class HistoryGame : MonoBehaviour
 
 	void Update()
 	{
+		if (!busy && uiActions.Pending != null)
+		{
+			var action = uiActions.Take();
+			if (QueuedActionValid(action))
+				Send(action.route, action.command);
+			else
+				error = "The classroom changed before that action could be sent. Please try again.";
+		}
+
 		if (pendingManualSelect != null && !busy)
 		{
 			var command = pendingManualSelect;
@@ -524,7 +542,7 @@ public class HistoryGame : MonoBehaviour
 			Debug.Log((reminderVisible ? "REMINDER_OPEN " : "REMINDER_CLOSE ") + reminderKey);
 		reminderWasVisible = reminderVisible;
 		bool boardVisible = teacherMode ? watchId != "" && spectator?.match != null : StudentMatch() != null && !NeedsIntro(StudentMatch());
-		Application.targetFrameRate = Time.unscaledTime < boostUntil ? 24 : boardVisible && pageReadable ? 12 : 4;
+		Application.targetFrameRate = Time.unscaledTime < boostUntil ? 24 : (boardVisible || (!teacherMode && StudentMatch()?.phase == "setup")) && pageReadable ? 12 : 4;
 		if (Time.unscaledTime > nextFact)
 		{
 			NextFact();
@@ -538,15 +556,48 @@ public class HistoryGame : MonoBehaviour
 		}
 	}
 
+	static bool RoutineRequest(string route, Command command)
+	{
+		return (route == "state" || route == "teacher/state" || route == "teacher/spectate") && string.IsNullOrEmpty(command.perspective);
+	}
+
+	bool QueuedActionValid(UiAction action)
+	{
+		if (apiStatus != "")
+			return false;
+		var m = StudentMatch();
+		if (action.route == "setup" || action.route.StartsWith("setup/"))
+		{
+			if (m == null || m.id != action.command.matchId || state.phase != "active" || m.phase != "setup" || m.ready[m.side] || DeadlineBlocked(m))
+				return false;
+			if (action.route == "setup/begin")
+				return m.setup != null && !m.setup.started;
+			return m.setup == null || (m.setup.started && SetupRemaining(m) > 0 && m.setup.revision == action.command.revision);
+		}
+
+		if (action.route == "emote")
+			return m != null && m.id == action.command.matchId && state.phase == "active" && m.phase == "play" && !m.blocked && m.battle?.kind != "combat" && !DeadlineBlocked(m);
+		return true;
+	}
+
 	void Send(string route, Command command)
 	{
-		if (!busy)
-			StartCoroutine(Request(route, command));
+		if (uiActions.Pending != null)
+			return;
+		if (busy)
+		{
+			if (!RoutineRequest(route, command))
+				uiActions.Enqueue(new UiAction { route = route, command = command });
+			return;
+		}
+
+		StartCoroutine(Request(route, command));
 	}
 
 	IEnumerator Request(string route, Command command)
 	{
-		bool routine = (route == "state" || route == "teacher/state" || route == "teacher/spectate") && string.IsNullOrEmpty(command.perspective);
+		bool routine = RoutineRequest(route, command);
+		uiActions.Begin(routine);
 		actionStatus = routine ? "" : "Sending action...";
 		busy = true;
 		using (var req = new UnityWebRequest(baseUrl + "/api/" + route, "POST"))
@@ -666,6 +717,7 @@ public class HistoryGame : MonoBehaviour
 		if (route == "select" && command.from == manualSelectionRequested && pendingManualSelect == null)
 			manualSelectionRequested = -1;
 		busy = false;
+		uiActions.Complete();
 		actionStatus = "";
 	}
 
@@ -816,6 +868,7 @@ public class HistoryGame : MonoBehaviour
 			}
 
 			DrawDeadlineNotice(current);
+			DrawPresetNotification(current);
 		}
 
 		GUI.enabled = true;
@@ -884,7 +937,6 @@ public class HistoryGame : MonoBehaviour
 			}
 
 			GUI.Label(nameRect, new GUIContent(visibleName, fullName), style);
-			DrawPresetBubble(m, side, new Rect(xx, 30, ww, 32));
 			if (active)
 			{
 				var small = new GUIStyle(GUI.skin.label)
@@ -1222,7 +1274,7 @@ public class HistoryGame : MonoBehaviour
 		GUI.Label(new Rect(245, 151, 220, 24), "Read-only | Fixed board");
 		int targetSide = m.side == 0 ? 1 : 0;
 		bool previousEnabled = GUI.enabled;
-		GUI.enabled = previousEnabled && !busy && (m.side == 0 || m.side == 1);
+		GUI.enabled = previousEnabled && !ActionBusy && (m.side == 0 || m.side == 1);
 		if (GUI.Button(new Rect(475, 150, 690, 24), "Switch to " + SideName(m, targetSide)))
 			Send("teacher/spectate", new Command { matchId = m.id, perspective = targetSide == 0 ? "red" : "blue" });
 		GUI.enabled = previousEnabled;
@@ -1303,7 +1355,7 @@ public class HistoryGame : MonoBehaviour
 		0,
 		0
 	};
-	void DrawPresetBubble(MatchView m, int side, Rect area)
+	void DrawPresetNotification(MatchView m)
 	{
 		if (presetMatch != m.id)
 		{
@@ -1313,26 +1365,44 @@ public class HistoryGame : MonoBehaviour
 			presetMenuOpen = false;
 		}
 
+		EmoteView latest = null;
 		foreach (var message in m.emotes ?? Array.Empty<EmoteView>())
 		{
-			if (message.side != side)
+			if (message.side < 0 || message.side > 1)
 				continue;
-			if (presetSeen[side] != message.issuedAt)
+			if (presetSeen[message.side] != message.issuedAt)
 			{
-				presetSeen[side] = message.issuedAt;
-				presetUntil[side] = Time.unscaledTime + Mathf.Min(4, (float)message.remainingMs / 1000);
+				presetSeen[message.side] = message.issuedAt;
+				presetUntil[message.side] = Time.unscaledTime + Mathf.Min(4, (float)message.remainingMs / 1000);
 			}
 
-			if (Time.unscaledTime >= presetUntil[side])
-				return;
-			var textStyle = new GUIStyle(GUI.skin.box)
-			{
-				fontSize = 14,
-				alignment = TextAnchor.MiddleCenter,
-				wordWrap = false
-			};
-			GUI.Box(area, HeaderName.Fit(message.text, area.width - 12, text => textStyle.CalcSize(new GUIContent(text)).x), textStyle);
+			if (Time.unscaledTime < presetUntil[message.side] && (latest == null || message.issuedAt >= latest.issuedAt))
+				latest = message;
 		}
+
+		float turnElapsed = Time.unscaledTime - turnNoticeStart;
+		if (latest == null || m.phase != "play" || m.battle?.kind == "combat" || DeadlineBlocked(m) || commanderOpen || reminderVisible || tipVisible || (!teacherMode && turnElapsed >= 0 && turnElapsed < 2))
+			return;
+		var commander = m.commanders != null && latest.side < m.commanders.Length ? m.commanders[latest.side] : null;
+		string name = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : PlayerName(m, latest.side);
+		float alpha = Mathf.Min(1, (presetUntil[latest.side] - Time.unscaledTime) / .35f);
+		GUI.color = new Color(.025f, .045f, .065f, .96f * alpha);
+		GUI.DrawTexture(new Rect(160, 335, 880, 180), Texture2D.whiteTexture);
+		GUI.color = new Color(1, 1, 1, alpha);
+		var portrait = commander != null ? CommanderPortrait(commander.id) : null;
+		if (portrait != null)
+			GUI.DrawTexture(new Rect(180, 355, 140, 140), portrait, ScaleMode.ScaleToFit);
+		var nameStyle = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 25,
+			fontStyle = FontStyle.Bold,
+			alignment = TextAnchor.MiddleLeft
+		};
+		GUI.contentColor = TurnColor(latest.side);
+		GUI.Label(new Rect(345, 353, 670, 42), HeaderName.Fit(name, 650, text => nameStyle.CalcSize(new GUIContent(text)).x), nameStyle);
+		GUI.contentColor = Color.white;
+		GUI.Label(new Rect(345, 397, 670, 95), "\"" + latest.text + "\"", new GUIStyle(GUI.skin.label) { fontSize = 30, alignment = TextAnchor.MiddleLeft, wordWrap = true });
+		GUI.color = Color.white;
 	}
 
 	void DrawPresetMenu(MatchView m)
@@ -1346,7 +1416,7 @@ public class HistoryGame : MonoBehaviour
 
 		double remaining = Math.Max(0, m.emoteCooldownMs - (Time.unscaledTime - setupReceivedAt) * 1000);
 		bool enabled = GUI.enabled;
-		GUI.enabled = enabled && !busy && remaining <= 0;
+		GUI.enabled = enabled && !ActionBusy && remaining <= 0;
 		if (GUI.Button(new Rect(895, 740, 285, 30), remaining > 0 ? "Messages ready in " + Math.Ceiling(remaining / 1000) + "s" : presetMenuOpen ? "Close messages" : "Send a friendly message"))
 			presetMenuOpen = !presetMenuOpen;
 		if (presetMenuOpen)
@@ -1442,7 +1512,7 @@ public class HistoryGame : MonoBehaviour
 		}
 
 		bool enabled = GUI.enabled;
-		GUI.enabled = enabled && !busy && state.phase == "active";
+		GUI.enabled = enabled && !ActionBusy && state.phase == "active";
 		if (GUI.Button(new Rect(450, 770, 300, 48), "Start Game"))
 			Send("setup/begin", new Command { matchId = m.id });
 		GUI.enabled = enabled;
@@ -1467,7 +1537,7 @@ public class HistoryGame : MonoBehaviour
 		string instructions = locked ? "Your army is ready. Play begins when both formations are locked." : m.setup != null ? "You have 60 seconds to arrange your army. Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready." : "Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready.";
 		GUI.Label(new Rect(45, 795, 825, 70), instructions, new GUIStyle(GUI.skin.label) { fontSize = 19, wordWrap = true });
 		bool enabled = GUI.enabled;
-		GUI.enabled = enabled && !busy && !locked && state.phase == "active" && (m.setup == null || SetupRemaining(m) > 0);
+		GUI.enabled = enabled && !ActionBusy && !locked && state.phase == "active" && (m.setup == null || SetupRemaining(m) > 0);
 		if (GUI.Button(new Rect(930, 794, 225, 39), "Start Game"))
 			Send("setup", new Command { matchId = m.id, revision = m.setup?.revision ?? 0, ranks = m.setup == null ? formation : null });
 		if (GUI.Button(new Rect(930, 842, 225, 30), "Shuffle"))
@@ -2154,6 +2224,8 @@ public class HistoryGame : MonoBehaviour
 			return;
 		if (editing)
 		{
+			if (ActionBusy)
+				return;
 			int k = m.side == 0 ? i - 60 : 39 - i;
 			if (k < 0 || k >= 40)
 				return;
@@ -2164,8 +2236,6 @@ public class HistoryGame : MonoBehaviour
 				int a = m.side == 0 ? selected - 60 : 39 - selected;
 				if (m.setup != null)
 				{
-					if (busy)
-						return;
 					if (a != k)
 						Send("setup/swap", new Command { matchId = m.id, from = a, to = k, revision = m.setup.revision });
 				}

@@ -5,7 +5,7 @@ import { createAuthority } from '../server/server.mjs';
 test('spectator toggle uses returned side and a single busy-guarded absolute perspective request', () => {
 	const source = readFileSync('Assets/Scripts/HistoryGame.cs', 'utf8').split('void DrawSpectator()')[1].split('void DrawStudent()')[0];
 	assert(source.includes('int targetSide = m.side == 0 ? 1 : 0;'));
-	assert(source.includes('previousEnabled && !busy && (m.side == 0 || m.side == 1)'));
+	assert(source.includes('previousEnabled && !ActionBusy && (m.side == 0 || m.side == 1)'));
 	assert.equal((source.match(/Send\("teacher\/spectate"/g) || []).length, 1);
 	assert(source.includes('"Switch to " + SideName(m, targetSide)'));
 	assert(source.includes('perspective = targetSide == 0 ? "red" : "blue"'));

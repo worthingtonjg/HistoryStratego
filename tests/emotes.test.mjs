@@ -126,3 +126,13 @@ test('sending a message does not advance an eligible running turn clock', () => 
 	}, p[0].token);
 	assert.equal(JSON.stringify(m), before);
 });
+test('non-active player can send a preset and cannot forge the sender identity', () => {
+	const { a, p, m } = fixture();
+	const player = p.find(x => a.call('state', {}, x.token).match.side !== m.turn), side = a.call('state', {}, player.token).match.side, before = JSON.stringify(m);
+	const result = a.call('emote', {
+		matchId: m.id, emoteId: 'well_played', side: 1 - side, name: 'forged'
+	}, player.token);
+	assert.equal(result.match.emotes[0].side, side);
+	assert.equal(result.match.emotes[0].text, 'Well played!');
+	assert.equal(JSON.stringify(m), before);
+});
