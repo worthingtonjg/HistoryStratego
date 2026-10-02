@@ -1,4 +1,4 @@
-import { mkdir, copyFile, cp, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, copyFile, cp, readFile, writeFile, readdir, unlink } from 'node:fs/promises';
 const stage = process.argv[2] || 'Builds/BrowserAuthorityStage', dest = 'Builds/BrowserRelease/docs';
 await mkdir(dest, {
 	recursive: true
@@ -6,6 +6,8 @@ await mkdir(dest, {
 await cp(stage + '/Build', dest + '/Build', {
 	recursive: true
 });
+const currentBuildFiles = new Set(await readdir(stage + '/Build'));
+for (const name of await readdir(dest + '/Build')) if (!currentBuildFiles.has(name) && /\.(data|wasm|js)$/.test(name)) await unlink(dest + '/Build/' + name);
 await cp('browser', dest + '/browser', {
 	recursive: true
 });
