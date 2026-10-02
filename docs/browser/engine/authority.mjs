@@ -1,4 +1,5 @@
-import { randomBytes } from './random.mjs';
+import {randomBytes} from './random.mjs';
+import { sendPreset, presetView } from './emotes.mjs';
 import { armBattleContinue, tickBattleContinue, battleContinueView } from './battle-continue.mjs';
 import { initTurn, tickTurn, turnView, setupBlocked, checkTurnGate } from './turn-clock.mjs';
 import { initSetup, tickSetup, pauseSetup, resumeSetup, setupView, setupAction } from './setup-clock.mjs';
@@ -10,6 +11,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		gameId: 'zN6Oyc9pDGlt60CITwGe', roomCode: randomBytes(2).toString('hex').toUpperCase(), sessionId: randomBytes(16).toString('hex')
 	};
 	const students = new Map(), tokens = new Map(), matches = new Map(), archives = new Map();
+	const emoteRecords = new Map(snapshot?.emotes || []);
 	let order = [], phase = 'waiting', pairedCount = snapshot?.pairedCount ?? (snapshot?.matches?.length || 0) * 2;
 	if (snapshot) {
 		phase = snapshot.phase;
@@ -44,15 +46,16 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		const index = order.indexOf(p.id), other = students.get(order[index ^ 1]);
 		return index >= 0 && index < pairedCount && seatAvailable(p, now()) && other && seatAvailable(other, now());
 	};
-	const state = p => {
-		tick();
+	const state = (p, advance = true) => {
+		if (advance)
+			tick();
 		const m = [...archives.values()].find(m => {
 			const side = m.players.indexOf(p.id);
 			return side >= 0 && m.events.some(e => e.kind === 'combat' && !e.ack[side]);
 		}) || find(p);
 		return {
 			classCode, phase, presence, player: p.id, nickname: p.name, commander: p.commander || null, paired: isPaired(p), match: m ? {
-				...view(m, m.players.indexOf(p.id)), battleContinue: battleContinueView(m, m.players.indexOf(p.id)), setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), setup: setupView(m, m.players.indexOf(p.id), phase, now()), playerNames: m.playerNames || m.players.map(id => students.get(id)?.name || "Player"), commanders: m.commanders || []
+				...view(m, m.players.indexOf(p.id)), ...presetView(emoteRecords, m, m.players.indexOf(p.id), now()), battleContinue: battleContinueView(m, m.players.indexOf(p.id)), setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), setup: setupView(m, m.players.indexOf(p.id), phase, now()), playerNames: m.playerNames || m.players.map(id => students.get(id)?.name || "Player"), commanders: m.commanders || []
 			} : null
 		};
 	};
@@ -72,18 +75,17 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 	};
 	return installPresentation({
 		tick, clockView: m => ({
-			setupBlocked: setupBlocked(m), turnClock: turnView(m, now())
+			setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), ...presetView(emoteRecords, m, -1, now())
 		}),
-		exportSnapshot: () => ({
-			phase, order, pairedCount, presence, students: [...tokens].map(([token, p]) => ({
-				...p, token
-			})), matches: [...matches.values()].map(m => ({
-				...m, requests: [...m.requests]
-			})), archives: [...archives.values()].map(m => ({
-				...m, requests: [...m.requests]
-			}))
-		}), teacherKey, classCode, students, matches, __perspectiveChoices: new Map(snapshot?.perspectives || []),
+		exportSnapshot: () => ({phase, order, pairedCount, presence, emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, __perspectiveChoices: new Map(snapshot?.perspectives || []),
 		call(route, b = {}, token = '') {
+			if (route === 'emote') {
+				const p = auth(token), m = find(p);
+				if (!m || b.matchId !== m.id || phase !== 'active' || m.phase !== 'play' || m.reveal || m.events.some(e => e.kind === 'combat' && e.ack?.some(ack => !ack)) || setupBlocked(m) || m.turnClock?.notice)
+					throw Error('Messages are available during active play');
+				sendPreset(emoteRecords, m, m.players.indexOf(p.id), b.emoteId, now());
+				return state(p, false);
+			}
 			tick();
 			if (route === 'join') {
 				if (b.classCode !== classCode)
@@ -161,6 +163,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 						archives.set(m.id, m);
 					}
 					matches.clear();
+					emoteRecords.clear();
 					for (let i = 0; i + 1 < pairedCount; i += 2) {
 						const m = createMatch([order[i], order[i + 1]]);
 						if (timedTurns)

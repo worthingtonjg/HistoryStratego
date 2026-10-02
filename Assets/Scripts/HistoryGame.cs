@@ -70,6 +70,14 @@ public class BattleContinueView
 }
 
 [Serializable]
+public class EmoteView
+{
+	public int side;
+	public string text;
+	public double issuedAt, remainingMs;
+}
+
+[Serializable]
 public class MatchView
 {
 	public string id, phase;
@@ -84,6 +92,8 @@ public class MatchView
 	public bool blocked, setupBlocked;
 	public TurnClockView turnClock;
 	public BattleContinueView battleContinue;
+	public EmoteView[] emotes;
+	public double emoteCooldownMs;
 	public SetupView setup;
 }
 
@@ -146,7 +156,7 @@ public class TeacherView
 [Serializable]
 public class Command
 {
-	public string name, classCode, a, b, requestId, matchId, perspective;
+	public string name, classCode, a, b, requestId, matchId, perspective, emoteId;
 	public string[] ranks;
 	public int from, to, seq, side, revision;
 	public bool automatic;
@@ -865,6 +875,7 @@ public class HistoryGame : MonoBehaviour
 			}
 
 			GUI.Label(nameRect, new GUIContent(visibleName, fullName), style);
+			DrawPresetBubble(m, side, new Rect(xx, 30, ww, 32));
 			if (active)
 			{
 				var small = new GUIStyle(GUI.skin.label)
@@ -1232,6 +1243,98 @@ public class HistoryGame : MonoBehaviour
 		GUI.Label(new Rect(30, 151, 1130, 24), hint);
 		DrawBoard(m, editing, false);
 		DrawSidebar(m, editing);
+		DrawPresetMenu(m);
+	}
+
+	bool presetMenuOpen;
+	string presetMatch = "";
+	readonly string[] presetKeys =
+	{
+		"greeting",
+		"your_move",
+		"bold",
+		"trap",
+		"well_played",
+		"good_game"
+	};
+	readonly string[] presetLabels =
+	{
+		"Greetings, General!",
+		"Your move, General.",
+		"A bold maneuver!",
+		"You have fallen into my trap!",
+		"Well played!",
+		"Good game!"
+	};
+	readonly double[] presetSeen =
+	{
+		-1,
+		-1
+	};
+	readonly float[] presetUntil =
+	{
+		0,
+		0
+	};
+	void DrawPresetBubble(MatchView m, int side, Rect area)
+	{
+		if (presetMatch != m.id)
+		{
+			presetMatch = m.id;
+			presetSeen[0] = presetSeen[1] = -1;
+			presetUntil[0] = presetUntil[1] = 0;
+			presetMenuOpen = false;
+		}
+
+		foreach (var message in m.emotes ?? Array.Empty<EmoteView>())
+		{
+			if (message.side != side)
+				continue;
+			if (presetSeen[side] != message.issuedAt)
+			{
+				presetSeen[side] = message.issuedAt;
+				presetUntil[side] = Time.unscaledTime + Mathf.Min(4, (float)message.remainingMs / 1000);
+			}
+
+			if (Time.unscaledTime >= presetUntil[side])
+				return;
+			var textStyle = new GUIStyle(GUI.skin.box)
+			{
+				fontSize = 14,
+				alignment = TextAnchor.MiddleCenter,
+				wordWrap = false
+			};
+			GUI.Box(area, HeaderName.Fit(message.text, area.width - 12, text => textStyle.CalcSize(new GUIContent(text)).x), textStyle);
+		}
+	}
+
+	void DrawPresetMenu(MatchView m)
+	{
+		bool allowed = !teacherMode && state.phase == "active" && m.phase == "play" && !m.blocked && m.battle?.kind != "combat" && !DeadlineBlocked(m) && !commanderOpen && apiStatus == "";
+		if (!allowed)
+		{
+			presetMenuOpen = false;
+			return;
+		}
+
+		double remaining = Math.Max(0, m.emoteCooldownMs - (Time.unscaledTime - setupReceivedAt) * 1000);
+		bool enabled = GUI.enabled;
+		GUI.enabled = enabled && !busy && remaining <= 0;
+		if (GUI.Button(new Rect(895, 740, 285, 30), remaining > 0 ? "Messages ready in " + Math.Ceiling(remaining / 1000) + "s" : presetMenuOpen ? "Close messages" : "Send a friendly message"))
+			presetMenuOpen = !presetMenuOpen;
+		if (presetMenuOpen)
+		{
+			GUI.Box(new Rect(895, 532, 285, 201), "");
+			for (int i = 0; i < presetKeys.Length; i++)
+				if (GUI.Button(new Rect(905, 541 + i * 30, 265, 26), presetLabels[i]))
+				{
+					presetMenuOpen = false;
+					Send("emote", new Command { matchId = m.id, emoteId = presetKeys[i] });
+					break;
+				}
+		}
+
+		GUI.enabled = enabled;
 	}
 
 	void LinkPointer(Rect rect)

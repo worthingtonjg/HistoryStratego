@@ -312,3 +312,42 @@ test('teacher creation clears stale invite hash and refuses an existing classroo
 		teacher.close();
 	}
 });
+test('encrypted student transport delivers allowlisted messages and enforces cooldown', async () => {
+	const env = environment(), teacher = await connectClassroom({
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('message-teacher')
+	}), one = await connectClassroom({
+		role: 'student', code: teacher.code, sdk: env.sdk('message-one')
+	}), two = await connectClassroom({
+		role: 'student', code: teacher.code, sdk: env.sdk('message-two')
+	});
+	try {
+		const seats = await Promise.all([one, two].map(p => p.request('join', {
+			classCode: teacher.code
+		})));
+		await teacher.request('teacher/start');
+		const m = [...teacher.authority.matches.values()][0];
+		m.phase = 'play';
+		m.ready = [true, true];
+		m.setupClocks = null;
+		m.timedTurns = false;
+		const sent = await one.request('emote', {
+			matchId: m.id, emoteId: 'greeting'
+		}, seats[0].token);
+		assert(!sent.error, sent.error);
+		const other = await two.request('state', {}, seats[1].token);
+		assert.equal(other.match.emotes[0].text, 'Greetings, General!');
+		const watcher = await teacher.request('teacher/spectate', {
+			matchId: m.id
+		});
+		assert.equal(watcher.match.emotes[0].text, 'Greetings, General!');
+		const denied = await one.request('emote', {
+			matchId: m.id, emoteId: 'greeting'
+		}, seats[0].token);
+		assert.match(denied.error, /Wait/);
+	}
+	finally {
+		one.close();
+		two.close();
+		teacher.close();
+	}
+});

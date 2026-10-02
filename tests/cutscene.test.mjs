@@ -32,7 +32,7 @@ test('spectator has only observation/navigation; players retain manual Continue 
 	for (const route of ['teacher/pause', 'teacher/resume', 'teacher/end', 'teacher/release-reveal'])
 		assert(!spectator.includes(route));
 	assert(spectator.includes('Back to teacher desk'));
-	assert(spectator.includes('Watch '));
+	assert(spectator.includes('Switch to '));
 	assert(containsCode(s, 'if (!readOnly && (e.ack[m.side] || elapsed >= 2.3f))'));
 	assert(containsCode(s, 'var m = teacherMode ? null : StudentMatch();'));
 	assert(s.includes('Click anywhere to continue'));

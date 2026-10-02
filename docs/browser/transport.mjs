@@ -209,7 +209,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 					try {
 						if (request.route.startsWith('teacher/'))
 							throw Error('Teacher commands are local to the classroom owner');
-						if (!['join', 'state', 'select', 'move', 'setup', 'setup/begin', 'setup/swap', 'setup/shuffle', 'ack', 'battle/ready'].includes(request.route))
+						if (!['join', 'state', 'select', 'move', 'setup', 'setup/begin', 'setup/swap', 'setup/shuffle', 'ack', 'battle/ready', 'emote'].includes(request.route))
 							throw Error('Unsupported student action');
 						if (!live || closed)
 							throw Error('Teacher disconnected');
