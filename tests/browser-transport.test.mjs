@@ -1,10 +1,11 @@
+import { acceptUnityTeacherGate } from '../browser/teacher-access.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connectClassroom, seal, open } from '../browser/transport.mjs';
 function environment() {
 	const store = new Map();
 	globalThis.localStorage = {
-		getItem: k => store.get(k) || null, setItem: (k, v) => store.set(k, v)
+		getItem: k => store.get(k) || null, setItem: (k, v) => store.set(k, v), removeItem: k => store.delete(k)
 	};
 	globalThis.document = {
 		hidden: false, addEventListener() {
@@ -20,10 +21,12 @@ function environment() {
 	};
 	const state = {}, clients = [], packets = [];
 	const sdk = id => {
+		let sdkRoom = 'ROOM';
 		const callbacks = new Map(), client = {
 			myPlayer: () => ({
 				id
-			}), getRoomCode: () => 'ROOM', insertCoin: async () => {
+			}), getRoomCode: () => sdkRoom, insertCoin: async (options) => {
+				sdkRoom = options.roomCode || 'ROOM';
 			}, setState: (k, v) => state[k] = v, getState: k => state[k], RPC: {
 				Mode: {
 					ALL: 0
@@ -52,7 +55,7 @@ function environment() {
 }
 test('browser authority encrypts student messages, retains redaction and rejects remote teacher control', async () => {
 	const env = environment(), teacher = await connectClassroom({
-		role: 'teacher', sdk: env.sdk('teacher')
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('teacher')
 	}), student = await connectClassroom({
 		role: 'student', code: teacher.code, sdk: env.sdk('student')
 	});
@@ -79,7 +82,7 @@ test('browser authority encrypts student messages, retains redaction and rejects
 });
 test('private recovery restores local checkpoint but rejects incorrect recovery credential', async () => {
 	const env = environment(), teacher = await connectClassroom({
-		role: 'teacher', sdk: env.sdk('teacher')
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('teacher')
 	});
 	let recovered;
 	try {
@@ -87,10 +90,10 @@ test('private recovery restores local checkpoint but rejects incorrect recovery 
 			classCode: teacher.code
 		});
 		await assert.rejects(connectClassroom({
-			role: 'recover', code: teacher.code, recovery: '00'.repeat(32), sdk: env.sdk('bad')
+			role: 'recover', teacherAccess: acceptUnityTeacherGate(), code: teacher.code, recovery: '00'.repeat(32), sdk: env.sdk('bad')
 		}));
 		recovered = await connectClassroom({
-			role: 'recover', code: teacher.code, recovery: teacher.recovery, sdk: env.sdk('recovered')
+			role: 'recover', teacherAccess: acceptUnityTeacherGate(), code: teacher.code, recovery: teacher.recovery, sdk: env.sdk('recovered')
 		});
 		assert.equal(recovered.code, teacher.code);
 		assert.equal((await recovered.request('state', {}, joined.token)).player, joined.player);
@@ -116,7 +119,7 @@ test('payload encryption rejects a different recipient key and tampering', async
 });
 test('two browser seats play through combat, pause and teacher recovery with redacted views', async () => {
 	const env = environment(), teacher = await connectClassroom({
-		role: 'teacher', sdk: env.sdk('teacher')
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('teacher')
 	}), one = await connectClassroom({
 		role: 'student', code: teacher.code, sdk: env.sdk('one')
 	}), two = await connectClassroom({
@@ -162,7 +165,7 @@ test('two browser seats play through combat, pause and teacher recovery with red
 		assert(denied.error);
 		// Recovery in the original profile uses only the private locally encrypted checkpoint.
 		recovered = await connectClassroom({
-			role: 'recover', code: teacher.code, recovery: teacher.recovery, sdk: env.sdk('new-host-owner')
+			role: 'recover', teacherAccess: acceptUnityTeacherGate(), code: teacher.code, recovery: teacher.recovery, sdk: env.sdk('new-host-owner')
 		});
 		assert.equal((await recovered.request('state', {}, seats[0].token)).phase, 'paused');
 		assert.equal(recovered.authority.matches.get(m.id).seq, seq);
@@ -172,5 +175,140 @@ test('two browser seats play through combat, pause and teacher recovery with red
 		one.close();
 		two.close();
 		recovered?.close();
+	}
+});
+test('normal teacher create and recovery require a Unity-issued convenience approval', async () => {
+	const env = environment();
+	await assert.rejects(connectClassroom({
+		role: 'teacher', sdk: env.sdk('blocked')
+	}), /unlock/);
+	await assert.rejects(connectClassroom({
+		role: 'recover', code: 'ROOM-0000000000000000', recovery: '0'.repeat(64), sdk: env.sdk('blocked-recover')
+	}), /unlock/);
+	await assert.rejects(connectClassroom({
+		role: 'teacher', teacherAccess: {}, sdk: env.sdk('forged')
+	}), /unlock/);
+});
+test('New class retires old code, token and recovery while admitting only the fresh class', async () => {
+	const env = environment(), access = acceptUnityTeacherGate();
+	const teacher = await connectClassroom({
+		role: 'teacher', teacherAccess: access, sdk: env.sdk('old-teacher')
+	});
+	const student = await connectClassroom({
+		role: 'student', code: teacher.code, sdk: env.sdk('old-student')
+	});
+	const seat = await student.request('join', {
+		classCode: teacher.code
+	});
+	await teacher.addComputer();
+	await teacher.request('teacher/start');
+	const saving = teacher.request('teacher/state');
+	await teacher.retire();
+	await saving;
+	const checkpointKey = await crypto.subtle.importKey('raw', Buffer.from(teacher.recovery, 'hex'), {
+		name: 'AES-GCM'
+	}, false, ['decrypt']);
+	assert.equal((await open(checkpointKey, JSON.parse(env.store.get('history.teacher.' + teacher.code)))).retired, true);
+	assert.equal((await student.request('state', {}, seat.token)).phase, 'ended');
+	assert.match((await student.request('move', {
+		from: 60, to: 50
+	}, seat.token)).error, /Class ended/);
+	assert.match((await teacher.request('teacher/resume')).error, /Class ended/);
+	await assert.rejects(connectClassroom({
+		role: 'student', code: teacher.code, sdk: env.sdk('late-old')
+	}), /Class ended/);
+	await assert.rejects(connectClassroom({
+		role: 'recover', code: teacher.code, recovery: teacher.recovery, teacherAccess: access, sdk: env.sdk('recover-old')
+	}), /Class ended/);
+	assert(env.store.has('history.teacher.' + teacher.code), 'retained encrypted checkpoint is not deleted');
+	const freshSdk = env.sdk('new-teacher');
+	const previousGet = freshSdk.getState;
+	freshSdk.getState = key => key === 'historyTeacher' ? undefined : previousGet(key);
+	freshSdk.getRoomCode = () => 'NEXT';
+	const fresh = await connectClassroom({
+		role: 'teacher', teacherAccess: access, sdk: freshSdk
+	});
+	const newcomer = await connectClassroom({
+		role: 'student', code: fresh.code, sdk: env.sdk('new-student')
+	});
+	try {
+		assert.notEqual(fresh.code, teacher.code);
+		assert.equal((await fresh.request('teacher/state')).roster.length, 0);
+		assert((await newcomer.request('join', {
+			classCode: fresh.code
+		})).token);
+		assert.equal((await fresh.request('teacher/state')).roster.length, 1);
+		assert.equal((await student.request('state', {}, seat.token)).phase, 'ended');
+	}
+	finally {
+		teacher.close();
+		student.close();
+		fresh.close();
+		newcomer.close();
+	}
+});
+test('current classroom and NPC seat recover after reopening without duplicate roster entries', async () => {
+	const env = environment(), access = acceptUnityTeacherGate();
+	const { currentClassroom } = await import('../browser/classroom-memory.mjs');
+	const first = await connectClassroom({
+		role: 'teacher', teacherAccess: access, sdk: env.sdk('owner')
+	});
+	await first.addComputer();
+	const before = await first.request('teacher/state');
+	assert.equal(before.roster.length, 1);
+	const remembered = currentClassroom();
+	assert.equal(remembered.code, first.code);
+	first.close();
+	await new Promise(r => setTimeout(r, 10));
+	const restored = await connectClassroom({
+		role: 'recover', teacherAccess: access, code: remembered.code, recovery: remembered.recovery, sdk: env.sdk('restored')
+	});
+	try {
+		const after = await restored.request('teacher/state');
+		assert.equal(after.roster.length, 1);
+		assert.equal(after.roster[0].id, before.roster[0].id);
+		assert.equal(currentClassroom().code, first.code);
+	}
+	finally {
+		restored.close();
+	}
+});
+test('short student code joins current teacher but reconnect retains the full classroom identity', async () => {
+	const env = environment(), teacher = await connectClassroom({
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('t')
+	});
+	const student = await connectClassroom({
+		role: 'student', code: 'ROOM', sdk: env.sdk('s')
+	});
+	try {
+		assert.equal(student.code, teacher.code);
+		assert.equal(student.joinCode, 'ROOM');
+		assert((await student.request('join', {
+			classCode: student.code
+		})).token);
+	}
+	finally {
+		teacher.close();
+		student.close();
+	}
+});
+test('teacher creation clears stale invite hash and refuses an existing classroom owner', async () => {
+	const env = environment();
+	location.href = 'https://example.test/teacher.html#r=ROLD';
+	let cleaned;
+	history.replaceState = (_, __, url) => {
+		cleaned = url.hash;
+	};
+	const teacher = await connectClassroom({
+		role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('owner')
+	});
+	try {
+		assert.equal(cleaned, '');
+		await assert.rejects(connectClassroom({
+			role: 'teacher', teacherAccess: acceptUnityTeacherGate(), sdk: env.sdk('collision')
+		}), /already owned/);
+	}
+	finally {
+		teacher.close();
 	}
 });

@@ -1,3 +1,4 @@
+import { unlockTeacher } from './teacher-gate-browser-helper.mjs';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
@@ -31,11 +32,13 @@ let browser;
 const pages = [];
 try {
 	browser = await launchBrowser();
-	const teacher = await browser.page(url, {
+	const teacher = await browser.page(url.replace(/index\.html$/, 'teacher.html'), {
 		initScript: "Object.defineProperty(document,'hidden',{get:()=>window.qaHidden||false});"
 	});
 	pages.push(teacher);
 	await teacher.call('Network.enable');
+	await unlockTeacher(teacher);
+	await teacher.wait("!document.querySelector('#create').hidden");
 	await teacher.evaluate("document.querySelector('#create').click()");
 	await teacher.wait('!!window.historyClassroom', 45000);
 	const code = await teacher.evaluate('historyClassroom.code');
@@ -107,11 +110,9 @@ try {
 	await active.screenshot(evidence + '/final-result.png');
 	await teacher.evaluate("historyClassroom.request('teacher/state')");
 	await teacher.call('Page.reload');
-	await teacher.wait("!!document.querySelector('#reconnect') && !document.querySelector('#reconnect').hidden", 20000);
-	await teacher.evaluate("document.querySelector('#reconnect').click()");
+	await teacher.wait('!!document.querySelector("#create")', 20000);
+	await unlockTeacher(teacher);
 	await teacher.wait('!!window.historyClassroom', 45000);
-	await teacher.wait('!!window.unityInstance', 120000);
-	await new Promise(r => setTimeout(r, 1000));
 	assert.equal((await teacher.evaluate("historyClassroom.request('teacher/state')")).phase, 'paused');
 	assert.equal((await own(active)).match.phase, 'over');
 	await new Promise(r => setTimeout(r, 9000));

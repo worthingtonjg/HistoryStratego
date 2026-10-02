@@ -21,3 +21,8 @@ docs/evidence/*.rsp
 *.p12
 playwright-report/
 test-results/
+
+# User-entered teacher convenience key and generated build verifier
+LocalConfig/
+Assets/Resources/TeacherGateBuild.json
+Assets/Resources/TeacherGateBuild.json.meta

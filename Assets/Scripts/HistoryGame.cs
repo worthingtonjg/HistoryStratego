@@ -194,7 +194,8 @@ public class HistoryGame : MonoBehaviour
 	[DllImport("__Internal")]
 	static extern void HS_SaveTips(string player, string match, string saved);
 #endif
-	bool pointerWanted, browserMode;
+	bool pointerWanted, browserMode, teacherGateOpen, teacherGatePassed;
+	string teacherEntryKey = "", teacherGateStatus = "";
 	Commander openCommander;
 	string openCommanderMatch = "";
 	float setupReceivedAt;
@@ -300,6 +301,44 @@ public class HistoryGame : MonoBehaviour
 		public string role, code, key;
 	}
 
+#if UNITY_WEBGL && !UNITY_EDITOR
+	[DllImport("__Internal")]
+	static extern void HS_TeacherUnlocked();
+	[DllImport("__Internal")]
+	static extern int HS_EntryRole();
+#endif
+	public void OpenTeacherGate(string unused)
+	{
+		browserMode = true;
+		teacherGateOpen = true;
+		teacherGatePassed = false;
+		teacherEntryKey = "";
+		teacherGateStatus = "";
+	}
+
+	void DrawTeacherGate()
+	{
+		GUI.Label(new Rect(280, 180, 640, 45), "Teacher entry");
+		GUI.Label(new Rect(280, 230, 640, 45), "Enter your teacher key to open your classroom.");
+		teacherEntryKey = GUI.PasswordField(new Rect(280, 285, 640, 38), teacherEntryKey, '*', 200);
+		if (Button(280, 350, 300, "Open teacher desk"))
+		{
+			if (TeacherGateVerifier.Accepts(teacherEntryKey))
+			{
+				teacherEntryKey = "";
+				teacherGatePassed = true;
+				teacherGateOpen = false;
+#if UNITY_WEBGL && !UNITY_EDITOR
+				HS_TeacherUnlocked();
+#endif
+			}
+			else
+				teacherGateStatus = "That key was not accepted. Try again.";
+		}
+
+		GUI.Label(new Rect(280, 410, 640, 70), teacherGateStatus);
+	}
+
 	public void BrowserLogin(string json)
 	{
 		browserMode = true;
@@ -308,6 +347,12 @@ public class HistoryGame : MonoBehaviour
 		code = login.code;
 		if (login.role == "teacher")
 		{
+			if (!teacherGatePassed)
+			{
+				OpenTeacherGate("");
+				return;
+			}
+
 			teacherKey = login.key;
 			Send("teacher/state", new Command());
 		}
@@ -317,6 +362,11 @@ public class HistoryGame : MonoBehaviour
 
 	void Start()
 	{
+#if UNITY_WEBGL && !UNITY_EDITOR
+		int entryRole = HS_EntryRole();
+		browserMode = entryRole != 0;
+		teacherGateOpen = entryRole == 1;
+#endif
 		Application.runInBackground = true;
 		Application.targetFrameRate = 4;
 		QualitySettings.vSyncCount = 0;
@@ -627,7 +677,9 @@ public class HistoryGame : MonoBehaviour
 		};
 		GUI.Label(new Rect(30, 47, 1140, 23), "Union vs Confederates", subtitleStyle);
 		GUI.contentColor = Color.white;
-		if (state == null && !teacherMode && browserMode)
+		if (teacherGateOpen)
+			DrawTeacherGate();
+		else if (state == null && !teacherMode && browserMode)
 		{
 			GUI.Label(new Rect(70, 170, 1060, 55), "Connecting to your classroom teacher through Playroom...");
 			GUI.Label(new Rect(70, 225, 1060, 60), "Keep the teacher classroom open. If the teacher disconnects, play waits safely.");

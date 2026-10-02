@@ -1,3 +1,5 @@
+import { requireTeacherAccess } from './teacher-access.mjs';
+import { isRetired, rememberClassroom, retireClassroom, retiredRoom } from './classroom-memory.mjs';
 import { createAuthority } from './engine/authority.mjs';
 const SDK = 'https://esm.sh/playroomkit@0.0.97?bundle';
 // Public client identifier, not a private API credential.
@@ -51,12 +53,16 @@ const recoveryKey = code => crypto.subtle.importKey('raw', bytes(code), {
 	name: 'AES-GCM'
 }, false, ['encrypt', 'decrypt']);
 export async function connectClassroom({ role, code = '', recovery = '', sdk = null, onStatus = () => {
-}, allowHidden = false } = {}) {
+}, allowHidden = false, teacherAccess = null } = {}) {
+	if (role === 'teacher' || role === 'recover')
+		requireTeacherAccess(teacherAccess);
+	if (code && isRetired(code.trim().toUpperCase()))
+		throw Error('Class ended. Ask for the new classroom code.');
 	sdk ??= await import(SDK);
 	const debug = globalThis.historyTransportDebug = {
 		sent: 0, received: 0, replied: 0, opened: 0, errors: []
 	};
-	let saved = null, pair, room, authority, teacherKey = '', session = crypto.randomUUID(), live = true, clock = Date.now(), last = performance.now(), peerKeys = new Map(), pending = new Map(), responses = new Map(), queue = Promise.resolve(), lastSave = 0, saveBusy = false;
+	let saved = null, pair, room, authority, teacherKey = '', session = crypto.randomUUID(), live = true, clock = Date.now(), last = performance.now(), peerKeys = new Map(), pending = new Map(), responses = new Map(), queue = Promise.resolve(), lastSave = 0, savePromise = Promise.resolve();
 	if (role === 'recover') {
 		if (!/^[a-f0-9]{64}$/i.test(recovery))
 			throw Error('Enter the full private recovery code');
@@ -64,9 +70,12 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		if (!record)
 			throw Error('No checkpoint in this browser. Recover here with the original browser profile, or create a new classroom.');
 		saved = await open(await recoveryKey(recovery), JSON.parse(record));
+		if (saved.retired)
+			throw Error('Class ended. This classroom was retired.');
 		role = 'teacher';
 	}
-	const peerTokens = new Map(saved?.peerTokens || []);
+	const peerTokens = new Map(saved?.peerTokens || []), botTokens = new Set(saved?.botTokens || []), bots = new Map();
+	let retired = false, closed = false, shortJoin = false, requestedRoom = "";
 	const teacher = role === 'teacher';
 	pair = await keyPair(saved);
 	const pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey));
@@ -77,9 +86,11 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	}
 	else {
 		code = code.trim().toUpperCase();
-		if (!/^[A-Z0-9]+-[A-F0-9]{16}$/.test(code))
-			throw Error('Use the full classroom code from your teacher');
+		shortJoin = /^[A-Z0-9]{4}$/.test(code);
+		if (!shortJoin && !/^[A-Z0-9]+-[A-F0-9]{16}$/.test(code))
+			throw Error('Enter the four-character classroom code from your teacher.');
 		room = code.split('-')[0];
+		requestedRoom = room;
 	}
 	const url = new URL(location.href);
 	url.hash = '';
@@ -102,6 +113,10 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		clearTimeout(connectTimer);
 	}
 	room = sdk.getRoomCode();
+	if (!teacher && room !== requestedRoom)
+		throw Error('Connected to a different room. Reload and enter the classroom code again.');
+	if (teacher && !saved && (retiredRoom(room) || sdk.getState('historyTeacher') || (typeof sdk.isHost === 'function' && !sdk.isHost())))
+		throw Error('That room is already owned or was retired here. Reload the teacher page to create a fresh classroom.');
 	const me = sdk.myPlayer().id;
 	if (teacher) {
 		code = room + '-' + await fingerprint(pub);
@@ -120,7 +135,11 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	if (!teacher) {
 		for (let i = 0; i < 100; i++) {
 			const candidate = sdk.getState('historyTeacher');
-			if (candidate?.code === code && await fingerprint(candidate.pub) === code.split('-')[1]) {
+			const candidateMatches = candidate?.code && (shortJoin ? candidate.code.split('-')[0] === requestedRoom : candidate.code === code);
+			if (candidateMatches && candidate.retired)
+				throw Error('Class ended. Ask for the new classroom code.');
+			if (candidateMatches && await fingerprint(candidate.pub) === candidate.code.split('-')[1]) {
+				code = candidate.code; // First-join trust for short codes; retain full identity for subsequent reconnects.
 				owner = candidate;
 				break;
 			}
@@ -141,18 +160,17 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		}
 	}
 	async function checkpoint() {
-		if (!teacher || saveBusy)
+		if (!teacher)
 			return;
-		saveBusy = true;
-		try {
+		// Serialize writes so a concurrent polling save cannot overwrite retirement or NPC seats.
+		savePromise = savePromise.catch(() => {
+		}).then(async () => {
 			const state = {
-				room, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), teacherKey, clock, peerTokens: [...peerTokens], snapshot: authority.exportSnapshot()
+				retired, botTokens: [...botTokens], room, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), teacherKey, clock, peerTokens: [...peerTokens], snapshot: authority.exportSnapshot()
 			};
 			localStorage.setItem('history.teacher.' + code, JSON.stringify(await seal(await recoveryKey(recovery), state)));
-		}
-		finally {
-			saveBusy = false;
-		}
+		});
+		return savePromise;
 	}
 	async function getKey(p) {
 		if (!peerKeys.has(p))
@@ -163,6 +181,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		debug.sent++;
 		const p = sdk.RPC.call(name, data, sdk.RPC.Mode.ALL);
 		p?.catch?.(e => debug.errors.push('RPC ' + e.message));
+		return p;
 	};
 	sdk.RPC.register('historyRequest', async (packet, sender) => {
 		debug.received++;
@@ -174,6 +193,16 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 				if (request.room !== code || typeof request.id !== 'string' || request.id.length > 100)
 					return;
 				const cacheKey = sender.id + ':' + request.id;
+				if (isRetired(code))
+					retired = true;
+				if (retired) {
+					publish('historyResponse', {
+						to: packet.pub, from: pub, body: await seal(key, {
+							id: request.id, result: endedResult(request.route)
+						})
+					});
+					return;
+				}
 				let reply = responses.get(cacheKey);
 				if (!reply) {
 					let result;
@@ -182,7 +211,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 							throw Error('Teacher commands are local to the classroom owner');
 						if (!['join', 'state', 'select', 'move', 'setup', 'setup/begin', 'setup/swap', 'setup/shuffle', 'ack', 'battle/ready'].includes(request.route))
 							throw Error('Unsupported student action');
-						if (!live)
+						if (!live || closed)
 							throw Error('Teacher disconnected');
 						if (performance.now() - last > 2500 || (!allowHidden && document.hidden))
 							pause();
@@ -232,7 +261,31 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		}
 		return null;
 	});
+	function endedResult(route) {
+		return route === 'state' ? {
+			classCode: code, phase: 'ended', match: null, paired: false
+		} : {
+			error: 'Class ended. Ask for the new classroom code.'
+		};
+	}
+	sdk.RPC.register('historyClassEnded', async (packet) => {
+		if (teacher || packet?.to !== pub || packet.from !== owner.pub)
+			return;
+		try {
+			const message = await open(await getKey(owner.pub), packet.body);
+			if (message.code === code && message.retired) {
+				retired = true;
+				onStatus('Class ended. Ask your teacher for the new classroom code.');
+			}
+		}
+		catch {
+		}
+	});
 	async function request(route, body = {}, token = '') {
+		if (retired || isRetired(code))
+			return endedResult(route);
+		if (closed)
+			throw Error('Connection closed. Reload to reconnect.');
 		if (teacher) {
 			if (!live)
 				throw Error('Teacher disconnected');
@@ -267,6 +320,13 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		const current = performance.now(), delta = current - last;
 		last = current;
 		if (teacher) {
+			if (isRetired(code) && !retired) {
+				retired = true;
+				authority.call('teacher/end', {}, teacherKey);
+				for (const bot of bots.values())
+					bot.stop();
+				bots.clear();
+			}
 			if (delta > 2500 || (!allowHidden && document.hidden) || !live)
 				pause();
 			else
@@ -278,12 +338,48 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			}
 		}
 	}, 250);
+	if (teacher) {
+		rememberClassroom(code, recovery);
+		if (botTokens.size) {
+			const { createOpponent } = await import('./npc.mjs');
+			for (const token of botTokens)
+				bots.set(token, createOpponent(authority, teacherKey, code, token));
+		}
+	}
 	await checkpoint();
 	onStatus(teacher ? 'Teacher classroom ready' : 'Connected to teacher');
 	return {
-		role: teacher ? 'teacher' : 'student', code, recovery, request, teacherKey, get authority() {
+		role: teacher ? 'teacher' : 'student', code, joinCode: room, recovery, request, teacherKey, get authority() {
 			return authority;
+		}, pause, async retire() {
+			if (!teacher)
+				throw Error('Teacher only');
+			if (retired)
+				return;
+			authority.call('teacher/end', {}, teacherKey);
+			retired = true;
+			retireClassroom(code);
+			responses.clear();
+			for (const bot of bots.values())
+				bot.stop();
+			bots.clear();
+			sdk.setState('historyTeacher', {
+				id: me, pub, session, code, retired: true
+			}, true);
+			await checkpoint();
+			const notices = [...peerKeys.keys()].map(async (peer) => publish('historyClassEnded', {
+				to: peer, from: pub, body: await seal(await getKey(peer), {
+					code, retired: true
+				})
+			}));
+			// Give reliable RPC delivery a bounded opportunity before the teacher page leaves.
+			await Promise.race([Promise.allSettled(notices), sleep(700)]);
+			onStatus('Class ended. The old code cannot resume play.');
 		}, pause, close() {
+			closed = true;
+			for (const bot of bots.values())
+				bot.stop();
+			bots.clear();
 			clearInterval(interval);
 			document.removeEventListener('visibilitychange', visibility);
 			pause();
@@ -292,7 +388,15 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			if (!teacher)
 				throw Error('Teacher only');
 			const { createOpponent } = await import('./npc.mjs');
-			return createOpponent(authority, teacherKey, code);
+			if (retired || isRetired(code))
+				throw Error('Class ended');
+			const bot = createOpponent(authority, teacherKey, code);
+			bots.set(bot.token, bot);
+			botTokens.add(bot.token);
+			await checkpoint();
+			return {
+				name: bot.name
+			};
 		}
 	};
 }

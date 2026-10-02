@@ -1,4 +1,11 @@
 mergeInto(LibraryManager.library, {
+	HS_EntryRole: function () {
+		return document.body.dataset.entry === 'teacher' ? 1 : document.body.dataset.entry === 'student' ? 2 : 0;
+	},
+	HS_TeacherUnlocked: function () {
+		if (window.historyTeacherUnlocked)
+			window.historyTeacherUnlocked();
+	},
 	HS_ReadableSeconds: function () {
 		var state = Module.__historyReadable;
 		if (!state) {

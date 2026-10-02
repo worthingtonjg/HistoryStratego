@@ -1,9 +1,13 @@
 # Civil War: Hidden Orders
 
-Unity WebGL + Playroom classroom strategy game. No custom backend required at runtime.
+Unity WebGL + Playroom classroom strategy game; no custom backend at runtime.
 
-See [classroom instructions](development-docs/BROWSER_RELEASE.md), [verification](development-docs/BROWSER_VERIFICATION.md) and [publishing](development-docs/PUBLISHING.md).
+- [Student entry](https://worthingtonjg.github.io/HistoryStratego/)
+- [Teacher entry](https://worthingtonjg.github.io/HistoryStratego/teacher.html)
+- [Teacher workflow and accepted trust model](development-docs/BROWSER_RELEASE.md)
+- [Focused manual checklist](development-docs/CLASSROOM_MANUAL_CHECKLIST.md)
+- [Verification](development-docs/BROWSER_VERIFICATION.md)
 
-Local preview: `python -m http.server 8090 --bind 127.0.0.1 --directory docs`, then http://127.0.0.1:8090/index.html. Internet access to Playroom is required.
+Students use four-character Playroom codes; legacy full codes work. The teacher enters the chosen convenience key in Unity, restores the locally retained class, or creates a new one. New class retires the previous session. This is a casual barrier, not strong authentication. Keep the teacher browser visible; hiding it pauses play.
 
-Run `node --test tests/*.test.mjs`. Pages uses Actions with LFS materialization; branch-based publishing would serve pointers. The teacher browser is trusted; this is not account-authenticated anti-cheat. Free development limit: 10 unique users/day.
+For a source build put your own key in ignored LocalConfig/teacher-key.txt. Never commit it. Pages deploys materialized LFS assets through Actions. Run `node --test tests/*.test.mjs` for regression tests. Local static preview: `python -m http.server 8090 --bind 127.0.0.1 --directory docs`.

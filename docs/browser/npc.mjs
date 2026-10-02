@@ -158,10 +158,10 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 		}
 	};
 }
-export function createOpponent(authority, teacherKey, classCode) {
-	const joined = authority.call('join', {
+export function createOpponent(authority, teacherKey, classCode, savedToken = '') {
+	const joined = savedToken ? authority.call('state', {}, savedToken) : authority.call('join', {
 		classCode
-	}), token = joined.token;
+	}), token = savedToken || joined.token;
 	let stopped = false, busy = false;
 	const state = () => authority.call('state', {}, token);
 	async function command(action, body = {}) {
@@ -206,7 +206,7 @@ export function createOpponent(authority, teacherKey, classCode) {
 		}
 	}, 750);
 	return {
-		name: joined.nickname, stop() {
+		name: joined.nickname, token, stop() {
 			stopped = true;
 			clearInterval(timer);
 		}

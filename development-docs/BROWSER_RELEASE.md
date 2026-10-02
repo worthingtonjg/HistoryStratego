@@ -1,33 +1,27 @@
-# Browser release
+# Classroom browser release
 
-Unity 6000.5.2f1 WebGL + Playroom SDK 0.0.97. Deployed runtime requires static HTTPS hosting, not Node or a custom backend. Node is a development/test tool. Loopback HTTP works locally.
+Student page: `/HistoryStratego/` or `/HistoryStratego/student.html`. Teacher page: `/HistoryStratego/teacher.html`.
 
-## Classroom workflow
+The teacher enters the chosen convenience key in Unity's masked field. The current classroom restores automatically on the same personal browser profile, including NPC seats/controllers. If no current classroom exists, choose Create classroom. Give students the four-character code shown above the game. Existing full codes still work. Students see only code + Join; returning student tabs reconnect to their original full classroom identity.
 
-1. Teacher chooses **Create classroom (teacher)**. Keep this tab visible and the device awake.
-2. Copy the full classroom code. Students paste it on the same page and choose **Join classroom**.
-3. At the teacher desk randomize pairs or edit them manually, then Start. Late arrivals wait; an odd student sits out.
-4. Students prepare and lock their own armies. The teacher can pause, resume, end and watch matches.
-5. **Add computer** adds a lightweight opponent using its own redacted player view. Respect the free development participant allowance.
+The teacher pairs students, starts/pauses/ends games and watches matches as before. Keep the teacher page visible and device awake. Backgrounding the teacher intentionally pauses the class; a background student can still auto-continue already-rendered combat while the teacher remains active.
 
-Hiding/disconnecting/suspending the teacher pauses play. This intentionally freezes all classroom clocks, including automatic battle continuation. Student background tabs do not pause the class: once a student has rendered combat and registered battle/ready, its five-second continuation runs in the visible teacher browser without further student polling. A student that never rendered/registered the combat must return first. This differs from the older always-running Node authority: the teacher browser must remain active. For a local demonstration put the teacher in a separate visible window. Becoming Playroom transport host does not grant teacher controls.
+**New class** ends the previous session and retires its code/tokens from normal gameplay. Existing encrypted checkpoints are retained, but retired classes cannot resume. The page restarts Playroom; enter the same teacher key again and a fresh room/roster is created automatically. No per-room recovery code is typed. Students see Class ended and can choose Join next class when given a new code.
 
-## Recovery and trust
+Recovery material is remembered locally on the teacher's personal machine; the chosen teacher key is not stored by the browser. Clearing browser storage loses local recovery. Reopening requires the same convenience key. A crash may lose the latest periodic checkpoint. No automatic daily deletion occurs.
 
-Save the private code in the collapsed teacher recovery section privately. Recovery requires that code AND the original browser profile's encrypted local checkpoint. Reload offers Reconnect previous session; recovered classrooms start paused. This is not cloud backup. Checkpoints are periodic and best effort; a crash can lose recent actions and deleting the profile loses recovery. Computer controller loops do not automatically restart after teacher recovery.
+## Security and room codes
 
-Student seat tokens remain in each tab's session storage for reload. Do not share tokens, recovery codes or teacher browser access.
+This is an explicitly accepted casual barrier, not strong account authentication or anti-cheat. The compiled verifier can be reverse engineered and browser code can be modified. Playroom host changes never grant normal teacher controls. Student messages/redacted responses remain encrypted; the trusted teacher browser holds complete game state.
 
-The teacher browser is trusted and holds complete match state. ECDH/AES-GCM envelopes protect student requests and redacted responses over Playroom. The full class code binds the teacher public-key fingerprint. Ranks/tokens are not plaintext shared state. This provides convenience classroom authority, not account authentication or independently audited anti-cheat. Malicious teachers or compromised browsers remain trusted; no always-running server or cross-device persistence is claimed.
+Four-character first joins intentionally trust the teacher key advertised in the room. They do not independently authenticate teacher identity; a malicious participant could impersonate a teacher on first join. The full identity is retained for reconnect, preventing an old session from silently switching to a new owner if a short code is reused. Legacy full-code joins retain fingerprint checking.
 
-The embedded Playroom Game ID is a public client identifier, not a secret API credential. The free development plan supports 10 unique users/day. No purchase occurs. Validate Playroom, esm.sh and hosting on the school network; GitHub was previously reported blocked there.
+The pinned Playroom SDK generates four-character candidates and creates rooms through its service; this is not a locally maintained global registry. New teacher creation clears stale invite hashes and refuses an already-advertised owner, an unexpected non-host creation, or a code retired in that browser. Simultaneous classes should use their distinct active Playroom rooms; short codes are not globally/permanently unique. A manually re-entered short code may identify a different future class after service reuse. No custom server or paid service has been added.
 
-## Development
+## Local configuration/build
 
-- `node --test tests/*.test.mjs`
-- `node tools/build-browser-engine.mjs` regenerates browser rules from the tested reference authority.
-- Build Unity WebGL into a fresh Builds stage using the existing Editor build command.
-- `node tools/package-browser.mjs Builds/BrowserAuthorityFinal` stages `Builds/BrowserRelease/docs`.
-- `node tests/browser-authority-live.mjs` runs actual Unity teacher/two students over live Playroom in one task browser. It consumes free-plan participant allowance; run deliberately.
+Put the user-chosen key in ignored `LocalConfig/teacher-key.txt`, one line, at least eight characters. Do not commit or share it. The Unity build consumes it internally and embeds a salted verifier only. Missing/empty configuration fails closed. Generated verifier assets are removed after building.
 
-Local preview: `python -m http.server 8090 --bind 127.0.0.1 --directory Builds/BrowserRelease/docs`, then http://127.0.0.1:8090/index.html. Keep the terminal open. No separate authority process is used.
+Use Unity 6000.5.2f1, WebGL module, and `BuildWeb.Build` (batch mode with graphics enabled because the existing preview helper renders). Set HISTORY_BUILD_OUTPUT to a fresh stage, then `node tools/package-browser.mjs Builds/ClassroomEntryFinal`. Node is development tooling only; the deployed runtime is static Unity + Playroom. Test with `node --test tests/*.test.mjs`.
+
+Playroom internet access is required. The free development plan has a 10 unique users/day limit. Validate the final host and Playroom on the school network; GitHub was previously reported blocked there.
