@@ -1181,7 +1181,7 @@ public class HistoryGame : MonoBehaviour
 
 		if (teacher == null)
 			return;
-		GUI.Label(new Rect(35, 105, 1100, 30), "Class " + teacher.classCode + " | " + teacher.phase + " | Select two students from the same faction to swap.");
+		GUI.Label(new Rect(35, 105, 1100, 30), "Class " + teacher.classCode + " | " + teacher.phase + " | " + ((teacher.phase == "active" || teacher.phase == "paused") ? "Select two connected waiting students from opposite factions to pair." : "Select two students from the same faction to swap."));
 		string[] actions =
 		{
 			"randomize",
@@ -1257,7 +1257,8 @@ public class HistoryGame : MonoBehaviour
 	void DrawTeacherSeat(RosterEntry player, float x, float y, float width)
 	{
 		bool enabled = GUI.enabled;
-		GUI.enabled = enabled && (teacher.phase == "waiting" || teacher.phase == "ended");
+		bool latePairing = teacher.phase == "active" || teacher.phase == "paused";
+		GUI.enabled = enabled && !ActionBusy && (latePairing ? player.waiting && player.connected : teacher.phase == "waiting" || teacher.phase == "ended");
 		Color background = GUI.backgroundColor;
 		if (swap == player.id)
 			GUI.backgroundColor = new Color(1f, .82f, .36f);
@@ -1282,6 +1283,20 @@ public class HistoryGame : MonoBehaviour
 		if (selectedPlayer == null)
 		{
 			swap = player.id;
+			return;
+		}
+
+		if (latePairing)
+		{
+			if (!selectedPlayer.waiting || !player.waiting || !selectedPlayer.connected || !player.connected)
+			{
+				swap = "";
+				error = "Both students must still be connected and waiting. Please choose again.";
+				return;
+			}
+			if (selectedPlayer.side == player.side) { error = "Choose a waiting student from the opposite faction."; return; }
+			Send("teacher/pair", new Command { a = swap, b = player.id });
+			swap = "";
 			return;
 		}
 
@@ -1567,7 +1582,7 @@ public class HistoryGame : MonoBehaviour
 	double SetupRemaining(MatchView m)
 	{
 		if (m.setup == null)
-			return 60000;
+			return 300000;
 		return Math.Max(0, m.setup.remainingMs - (state?.phase == "active" && m.setup.started ? (Time.unscaledTime - setupReceivedAt) * 1000 : 0));
 	}
 
@@ -1606,7 +1621,7 @@ public class HistoryGame : MonoBehaviour
 		GUI.contentColor = accent;
 		GUI.Label(new Rect(45, 757, 1080, 30), heading, new GUIStyle(GUI.skin.label) { fontSize = 23, fontStyle = FontStyle.Bold });
 		GUI.contentColor = Color.white;
-		string instructions = locked ? "Your army is ready. Play begins when both formations are locked." : m.setup != null ? "You have 60 seconds to arrange your army. Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready." : "Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready.";
+		string instructions = locked ? "Your army is ready. Play begins when both formations are locked." : m.setup != null ? "You have up to 5 minutes to arrange your army. Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready." : "Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready.";
 		GUI.Label(new Rect(45, 795, 825, 70), instructions, new GUIStyle(GUI.skin.label) { fontSize = 19, wordWrap = true });
 		bool enabled = GUI.enabled;
 		GUI.enabled = enabled && !ActionBusy && !locked && state.phase == "active" && (m.setup == null || SetupRemaining(m) > 0);

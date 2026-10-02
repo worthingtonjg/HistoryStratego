@@ -26,7 +26,7 @@ test('intro starts only the caller clock; repeat/reload cannot extend it or leak
 	assert.equal(before.started, false);
 	assert.equal(before.draft.length, 40);
 	f.advance(300000);
-	assert.equal(f.call(0, 'state').match.setup.remainingMs, 60000);
+	assert.equal(f.call(0, 'state').match.setup.remainingMs, 300000);
 	let s = f.call(0, 'setup/begin', {
 		side: 1, deadline: Infinity, serverNow: 0
 	});
@@ -36,7 +36,7 @@ test('intro starts only the caller clock; repeat/reload cannot extend it or leak
 	assert.equal(f.call(0, 'setup/begin').match.setup.deadline, deadline);
 	assert.equal(f.a.call('join', {
 		classCode: 'CLOCK'
-	}, f.p[0].token).match.setup.remainingMs, 58766);
+	}, f.p[0].token).match.setup.remainingMs, 298766);
 	assert.equal(s.match.board.filter(Boolean).length, 0);
 	assert.equal(s.match.setupClocks, undefined);
 	assert.throws(() => f.a.call('setup/begin', {
@@ -69,7 +69,7 @@ test('deadline locks the last server-confirmed legal draft even disconnected; la
 	assert.throws(() => f.call(0, 'setup/shuffle', {
 		revision: 0
 	}), /changed/);
-	f.advance(60000);
+	f.advance(300000);
 	f.a.tick();
 	const after = f.call(0, 'state');
 	assert.equal(after.match.ready[0], true);
@@ -90,7 +90,7 @@ test('independent starts, early lock and simultaneous timeout enter play once', 
 	f.call(0, 'setup/begin');
 	f.advance(20000);
 	f.call(1, 'setup/begin');
-	f.advance(40000);
+	f.advance(280000);
 	let s = f.call(1, 'state');
 	assert.deepEqual(s.match.ready, [true, false]);
 	assert.equal(s.match.setup.remainingMs, 20000);
@@ -101,13 +101,13 @@ test('independent starts, early lock and simultaneous timeout enter play once', 
 	assert.equal(s.match.phase, 'play');
 	assert.equal(s.match.seq, 2);
 	assert.equal(s.match.board.filter(Boolean).length, 80);
-	f.advance(60000);
+	f.advance(300000);
 	f.a.tick();
 	assert.equal(f.call(0, 'state').match.seq, 2);
 	const g = fixture();
 	g.call(0, 'setup/begin');
 	g.call(1, 'setup/begin');
-	g.advance(60000);
+	g.advance(300000);
 	g.a.tick();
 	assert.equal(g.call(0, 'state').match.phase, 'play');
 	assert.equal(g.call(0, 'state').match.seq, 2);
@@ -118,19 +118,19 @@ test('pause freezes countdown, resume retains remaining time, end cancels and a 
 	f.advance(10000);
 	f.a.call('teacher/pause', {}, 'teacher');
 	const frozen = f.call(0, 'state').match.setup;
-	assert.equal(frozen.remainingMs, 50000);
-	f.advance(360000);
-	assert.equal(f.call(0, 'state').match.setup.remainingMs, 50000);
+	assert.equal(frozen.remainingMs, 290000);
+	f.advance(3300000);
+	assert.equal(f.call(0, 'state').match.setup.remainingMs, 290000);
 	assert.throws(() => f.call(0, 'setup/shuffle', {
 		revision: 0
 	}), /not enabled/);
 	assert.throws(() => f.call(1, 'setup/begin'), /not enabled/);
 	f.a.call('teacher/resume', {}, 'teacher');
-	assert.equal(f.call(0, 'state').match.setup.deadline, f.now() + 50000);
-	f.advance(49999);
+	assert.equal(f.call(0, 'state').match.setup.deadline, f.now() + 290000);
+	f.advance(289999);
 	assert.equal(f.call(0, 'state').match.ready[0], false);
 	f.a.call('teacher/end', {}, 'teacher');
-	f.advance(60000);
+	f.advance(300000);
 	f.a.tick();
 	assert.equal(f.call(0, 'state').match, null);
 	assert.throws(() => f.call(0, 'setup/begin'), /not enabled/);
@@ -139,5 +139,5 @@ test('pause freezes countdown, resume retains remaining time, end cancels and a 
 	const fresh = f.call(0, 'state');
 	assert.notEqual(fresh.match.id, f.id);
 	assert.equal(fresh.match.setup.started, false);
-	assert.equal(fresh.match.setup.remainingMs, 60000);
+	assert.equal(fresh.match.setup.remainingMs, 300000);
 });

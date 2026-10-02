@@ -1,6 +1,6 @@
 import { setup } from './game.mjs';
 import { generateFormation } from '../web/formation.mjs';
-export const SETUP_MS = 60000;
+export const SETUP_MS = 300000;
 export function initSetup(m) {
 	m.setupClocks = [0, 1].map(() => ({
 		started: false, deadline: null, remaining: SETUP_MS, revision: 0, draft: generateFormation(), automatic: false

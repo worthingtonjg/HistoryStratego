@@ -47,6 +47,15 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			throw Error('Teacher authorization required');
 	};
 	const find = p => [...matches.values()].find(m => m.players.includes(p.id));
+	const addMatch = ids => {
+		const m = createMatch(ids);
+		if (timedTurns) initTurn(m);
+		if (timedSetup) initSetup(m);
+		m.playerNames = ids.map(id => students.get(id).name);
+		m.commanders = ids.map(id => structuredClone(students.get(id).commander));
+		matches.set(m.id, m);
+		return m;
+	};
 	const isPaired = p => {
 		const index = order.indexOf(p.id), other = students.get(order[index ^ 1]);
 		return index >= 0 && index < pairedCount && seatAvailable(p, now()) && other && seatAvailable(other, now());
@@ -173,17 +182,23 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 					}
 					matches.clear();
 					emoteRecords.clear();
-					for (let i = 0; i + 1 < pairedCount; i += 2) {
-						const m = createMatch([order[i], order[i + 1]]);
-						if (timedTurns)
-							initTurn(m);
-						if (timedSetup)
-							initSetup(m);
-						m.playerNames = m.players.map(id => students.get(id).name);
-						m.commanders = m.players.map(id => structuredClone(students.get(id).commander));
-						matches.set(m.id, m);
-					}
+					for (let i = 0; i + 1 < pairedCount; i += 2) addMatch([order[i], order[i + 1]]);
 					phase = 'active';
+				}
+				else if (action === 'pair') {
+					if (phase !== 'active' && phase !== 'paused') throw Error('Start the round before pairing late arrivals.');
+					const first = students.get(b.a), second = students.get(b.b);
+					if (!first || !second || first.id === second.id) throw Error('Choose two different waiting students.');
+					const existing = find(first);
+					if (existing?.players.includes(second.id)) return roster(); // Idempotent duplicate click/retry.
+					if (existing || find(second)) throw Error('Choose unpaired students; existing games cannot be reassigned.');
+					if (!seatAvailable(first, now()) || !seatAvailable(second, now())) throw Error('Both waiting students must be connected.');
+					if (first.commander.side === second.commander.side) throw Error('Choose one Union and one Confederate waiting student.');
+					const ids = first.commander.side === 0 ? [first.id, second.id] : [second.id, first.id];
+					const waiting = order.slice(pairedCount).filter(id => !ids.includes(id));
+					order = [...order.slice(0, pairedCount), ...ids, ...waiting];
+					pairedCount += 2;
+					addMatch(ids);
 				}
 				else if (action === 'pause') {
 					if (phase !== 'active')

@@ -42,7 +42,7 @@ for (const side of [0, 1])
 			});
 			assert.equal(opponentCanArm(call(side, 'state'), m.id), false);
 			if (timeout) {
-				advance(60000);
+				advance(300000);
 				assert(m.ready.every(Boolean));
 				assert.equal(opponentCanArm(call(side, 'state'), m.id), false);
 				await bot.tick();

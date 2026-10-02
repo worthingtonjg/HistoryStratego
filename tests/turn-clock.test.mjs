@@ -92,7 +92,7 @@ test('actual setup expiry blocks both seats for three seconds; early locking doe
 	f.call(1, 'setup', {
 		revision: 0
 	});
-	f.advance(60000);
+	f.advance(300000);
 	assert.equal(f.call(0, 'state').match.setup.noticeRemainingMs, 3000);
 	assert.equal(f.call(1, 'state').match.setup.noticeRemainingMs, 0);
 	assert.equal(f.call(1, 'state').match.setupBlocked, true);
@@ -203,7 +203,7 @@ test('both sides receive independent deadlines and combat blocks until final ack
 test('late notice polling shows remaining only and fresh round resets deadline and knowledge', () => {
 	const f = fixture(true);
 	f.call(0, 'setup/begin');
-	f.advance(60000);
+	f.advance(300000);
 	f.advance(2500);
 	assert.equal(f.a.call('join', {
 		classCode: 'TEST'
@@ -230,7 +230,7 @@ test('HTTP contract exposes notice clocks to students and spectator without inte
 	await new Promise(resolve => server.once('listening', resolve));
 	try {
 		f.call(0, 'setup/begin');
-		f.advance(60000);
+		f.advance(300000);
 		const get = async (route, token, body = {}) => (await fetch('http://127.0.0.1:' + server.address().port + '/api/' + route, {
 			method: 'POST', headers: {
 				authorization: 'Bearer ' + token, 'content-type': 'application/json'

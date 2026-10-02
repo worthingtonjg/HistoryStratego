@@ -32,7 +32,7 @@ window.fetch = async (input, options = {}) => {
 			if (value.classCode)
 				value.classCode = runtime.joinCode;
 			if (!teacherPage)
-				renderClassState(value, document.querySelector('#connection-status'), document.querySelector('#next-class'));
+				renderClassState(value, document.querySelector('#connection-status'), document.querySelector('#next-class'), document.querySelector('#game'), document.querySelector('#class-ended'));
 			return new Response(JSON.stringify(value), {
 				status: value.error ? 400 : 200, headers: {
 					'Content-Type': 'application/json'
@@ -175,11 +175,13 @@ else {
 		}));
 		location.replace(new URL('student.html', location.href));
 	};
-	document.querySelector('#next-class').onclick = () => {
+	const joinNextClass = () => {
 		sessionStorage.removeItem('history.browserSession');
 		sessionStorage.removeItem('studentToken');
 		location.replace(new URL('student.html', location.href));
 	};
+	document.querySelector('#next-class').onclick = joinNextClass;
+	document.querySelector('#ended-next-class').onclick = joinNextClass;
 	// Student-only refresh reuses its own seat, never a saved teacher session.
 	try {
 		const previous = JSON.parse(sessionStorage.getItem('history.browserSession') || 'null');
