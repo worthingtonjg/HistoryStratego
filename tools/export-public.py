@@ -19,8 +19,12 @@ for name in sorted(set(chosen)):
 shutil.copytree(root/'Builds/BrowserRelease/docs',out/'docs')
 for name in ['BROWSER_VERIFICATION.md','PUBLISHING.md','RULES.md','PORTRAITS.md','commander-portraits.json','FORMATTING.md']:
     dst=out/'development-docs'/name;dst.parent.mkdir(exist_ok=True);shutil.copy2(root/'docs'/name,dst)
+# Keep the private teacher navigation address out of exported human-facing docs.
+for doc in (out/'development-docs').glob('*.md'):
+    text=doc.read_text(encoding='utf8').replace(' Teacher URL: https://worthingtonjg.github.io/HistoryStratego/teacher.html .','').replace('teacher.html','teacher portal')
+    doc.write_text(text,encoding='utf8')
 p=out/'tests/portraits.test.mjs';p.write_text(p.read_text(encoding='utf8').replace('docs/commander-portraits.json','development-docs/commander-portraits.json'),encoding='utf8')
-p=out/'README.md';p.write_text('# Civil War: Hidden Orders\n\nUnity WebGL classroom strategy game with Playroom networking and teacher-browser authority. No custom backend is required at runtime.\n\nRead [verification](development-docs/BROWSER_VERIFICATION.md) and [publishing](development-docs/PUBLISHING.md).\n\nLocal static preview: `python -m http.server 8090 --bind 127.0.0.1 --directory docs`, then http://127.0.0.1:8090/index.html. Playroom internet access is required.\n\n`docs` contains the materialized static app. Source Unity assets are in Assets, browser authority in browser, and the older Node authority in server is development/reference code. Run `node --test tests/*.test.mjs` for regression tests.\n\nPages deployment uses Actions with LFS materialization; do not serve LFS pointers through branch-based Pages. Teacher access is convenience classroom control, not account-authenticated anti-cheat. The free Playroom development allowance is 10 unique users/day.\n',encoding='utf8')
+p=out/'README.md';p.write_text('# Civil War: Hidden Orders\n\nUnity WebGL + Playroom classroom strategy game; no custom backend at runtime.\n\n- [Student entry](https://worthingtonjg.github.io/HistoryStratego/)\n',encoding='utf8')
 (out/'.gitattributes').write_text('Assets/**/*.png filter=lfs diff=lfs merge=lfs -text\ndocs/Build/*.data filter=lfs diff=lfs merge=lfs -text\ndocs/Build/*.wasm filter=lfs diff=lfs merge=lfs -text\n')
 workflow=out/'.github/workflows/pages.yml';workflow.parent.mkdir(parents=True)
 workflow.write_text("""name: Deploy static Unity classroom
