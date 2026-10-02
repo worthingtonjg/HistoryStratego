@@ -70,10 +70,11 @@ public class TabletopBoard : MonoBehaviour
 		view.cullingMask = 1 << Layer;
 		view.clearFlags = CameraClearFlags.SolidColor;
 		view.backgroundColor = new Color(.025f, .04f, .05f);
-		view.orthographic = true;
+		view.orthographic = false;
+		view.fieldOfView = 30;
 		view.orthographicSize = BoardHalfHeight;
 		view.nearClipPlane = .1f;
-		view.farClipPlane = 60;
+		view.farClipPlane = 150;
 		view.transform.position = new Vector3(0, 14, -13);
 		view.transform.LookAt(new Vector3(0, .15f, 0));
 		var sun = new GameObject("Tabletop soft light");
@@ -89,19 +90,21 @@ public class TabletopBoard : MonoBehaviour
 		for (int i = 0; i < 100; i++)
 		{
 			var pos = Position(i);
-			tiles[i] = Box("Square " + i, pos, new Vector3(.989f, .055f, .989f), Ground(i), root.transform, i).GetComponent<Renderer>();
+			tiles[i] = Box("Square " + i, pos, new Vector3(.975f, .055f, .975f), Ground(i), root.transform, i).GetComponent<Renderer>();
 			var g = new GameObject("Piece " + i);
 			g.layer = Layer;
 			g.transform.SetParent(root.transform, false);
 			g.transform.localPosition = pos;
 			pieces[i] = g;
-			Box("Foot", new Vector3(0, .10f, 0), new Vector3(.76f, .14f, .4f), Mat("rim", new Color(.12f, .15f, .17f)), g.transform, i);
-			bodies[i] = Box("Upright block", new Vector3(0, .52f, 0), new Vector3(.69f, .8f, .11f), Mat("red", new Color(.65f, .16f, .13f)), g.transform, i).GetComponent<Renderer>();
-			stickers[i] = Box("Illustrated face", new Vector3(0, .52f, -.06f), new Vector3(.59f, .69f, .014f), Mat("paper", new Color(.91f, .87f, .73f)), g.transform).GetComponent<Renderer>();
+			Box("Foot", new Vector3(.014f, .064f, -.016f), new Vector3(.87f, .018f, .87f), Mat("rim", new Color(.12f, .15f, .17f)), g.transform, i);
+			bodies[i] = Box("Upright block", new Vector3(0, .181f, 0), new Vector3(.84f, .22f, .84f), Mat("red", new Color(.45f, .115f, .105f)), g.transform, i).GetComponent<Renderer>();
+			stickers[i] = Box("Illustrated face", new Vector3(0, .299f, 0), new Vector3(.80f, .80f, .012f), Mat("paper", new Color(.91f, .87f, .73f)), g.transform).GetComponent<Renderer>();
+			stickers[i].transform.localRotation = Quaternion.Euler(90, 0, 0);
 			var label = new GameObject("Rank");
 			label.layer = Layer;
 			label.transform.SetParent(g.transform, false);
-			label.transform.localPosition = new Vector3(-.29f, .89f, -.086f);
+			label.transform.localPosition = new Vector3(-.365f, .31f, .355f);
+			label.transform.localRotation = Quaternion.Euler(90, 0, 0);
 			var text = label.AddComponent<TextMesh>();
 			text.font = font;
 			text.fontSize = 128;
@@ -114,7 +117,43 @@ public class TabletopBoard : MonoBehaviour
 			numbers[i] = text;
 			g.SetActive(false);
 		}
+		CreateGridLines();
 	}
+
+    int fitWidth, fitHeight;
+    Mesh gridMesh;
+    void CreateGridLines() {
+        var vertices = new List<Vector3>(); var indices = new List<int>();
+        Action<float,float,float,float> quad = (x,z,w,h) => {
+            int n=vertices.Count;
+            vertices.Add(new Vector3(x-w/2,.059f,z-h/2)); vertices.Add(new Vector3(x-w/2,.059f,z+h/2));
+            vertices.Add(new Vector3(x+w/2,.059f,z+h/2)); vertices.Add(new Vector3(x+w/2,.059f,z-h/2));
+            indices.AddRange(new[]{n,n+1,n+2,n,n+2,n+3});
+        };
+        for(int i=0;i<=10;i++){quad(i-5,0,.018f,10);quad(0,i-5,10,.028f);}
+        gridMesh=new Mesh();gridMesh.name="Board grid overlay";gridMesh.SetVertices(vertices);gridMesh.SetTriangles(indices,0);gridMesh.RecalculateNormals();
+        var g=new GameObject("Readable grid lines");g.layer=Layer;g.transform.SetParent(root.transform,false);
+        g.AddComponent<MeshFilter>().sharedMesh=gridMesh;var renderer=g.AddComponent<MeshRenderer>();
+        var mat=Mat("grid-lines",new Color(.07f,.10f,.055f));mat.SetFloat("_Unlit",1);renderer.sharedMaterial=mat;renderer.shadowCastingMode=ShadowCastingMode.Off;
+    }
+    void FitPerspective(int width,int height) {
+        fitWidth=width;fitHeight=height;view.aspect=(float)width/height;view.orthographic=false;view.fieldOfView=30;view.ResetProjectionMatrix();
+        Vector3 aim=new Vector3(0,.15f,0), direction=new Vector3(0,.70710678f,-.70710678f);
+        float lo=10,hi=100;
+        for(int step=0;step<18;step++) {
+            float d=(lo+hi)/2;view.transform.position=aim+direction*d;view.transform.LookAt(aim);bool fits=true;
+            foreach(float x in new[]{-5.1f,5.1f})foreach(float z in new[]{-5.1f,5.1f})foreach(float y in new[]{-.22f,.36f}) {
+                Vector3 p=view.WorldToViewportPoint(new Vector3(x,y,z));if(p.z<=0||p.x<.035f||p.x>.965f||p.y<.035f||p.y>.965f)fits=false;
+            }
+            if(fits)hi=d;else lo=d;
+        }
+        view.transform.position=aim+direction*hi;view.transform.LookAt(aim);
+        float min=1,max=0;
+        foreach(float x in new[]{-5.1f,5.1f})foreach(float z in new[]{-5.1f,5.1f})foreach(float y in new[]{-.22f,.36f}) {
+            float v=view.WorldToViewportPoint(new Vector3(x,y,z)).y;min=Mathf.Min(min,v);max=Mathf.Max(max,v);
+        }
+        var projection=view.projectionMatrix;projection.m12-=2*(.5f-(min+max)/2);view.projectionMatrix=projection;dirty=true;
+    }
 
 	public static Vector3 Position(int screen)
 	{
@@ -126,20 +165,19 @@ public class TabletopBoard : MonoBehaviour
 		string key = "ground-" + i;
 		if (mats.TryGetValue(key, out var material))
 			return material;
-		var t = new Texture2D(32, 32, TextureFormat.RGBA32, false);
-		textures.Add(t);
-		var pixels = new Color[1024];
-		for (int y = 0; y < 32; y++)
-			for (int x = 0; x < 32; x++)
-			{
-				float gx = (i % 10) * 32 + x, gy = (i / 10) * 32 + y;
-				float broad = Mathf.PerlinNoise(gx / 65f, gy / 65f), fine = Mathf.PerlinNoise(gx * .7f, gy * .7f) - .5f;
-				Color c = Lake(i) ? Color.Lerp(new Color(.16f, .31f, .35f), new Color(.25f, .43f, .45f), broad) : Color.Lerp(new Color(.29f, .35f, .22f), new Color(.44f, .39f, .27f), Mathf.SmoothStep(.15f, .9f, broad));
-				float variation = fine * .045f;
-				if (Lake(i) && Mathf.Sin(gy * .48f + Mathf.Sin(gx * .13f) * 2) > .93f)
-					variation += .025f;
-				pixels[y * 32 + x] = new Color(c.r + variation, c.g + variation, c.b + variation, 1);
-			}
+		const int resolution = 64;
+        var t = new Texture2D(resolution, resolution, TextureFormat.RGBA32, false);
+        textures.Add(t);
+        var pixels = new Color[resolution * resolution];
+        for (int y = 0; y < resolution; y++) for (int x = 0; x < resolution; x++) {
+            float gx = (i % 10) * 128 + x * 2, gy = (i / 10) * 128 + y * 2;
+            float broad = Mathf.PerlinNoise(gx / 135f, gy / 135f), patch = Mathf.PerlinNoise(gx / 33f + 19, gy / 33f + 5), fine = Mathf.PerlinNoise(gx * .62f, gy * .62f);
+            Color c = Color.Lerp(new Color(.24f, .34f, .16f), new Color(.43f, .51f, .28f), broad);
+            c = Color.Lerp(c, new Color(.48f, .42f, .27f), Mathf.SmoothStep(.52f, .85f, patch) * .48f);
+            c *= .83f + fine * .34f;
+            if (Lake(i)) c = Color.Lerp(new Color(.16f,.31f,.35f), new Color(.25f,.43f,.45f), broad);
+            pixels[y * resolution + x] = c;
+        }
 
 		t.SetPixels(pixels);
 		t.Apply();
@@ -159,6 +197,14 @@ public class TabletopBoard : MonoBehaviour
 		string key = "face-" + rank + "-" + side;
 		if (mats.TryGetValue(key, out var m))
 			return m;
+        if (rank == "?") {
+            var concealedShader = Resources.Load<Shader>("PieceFace");
+            if (concealedShader != null && concealedShader.isSupported) {
+                m = new Material(concealedShader); m.SetFloat("_Concealed", 1);
+                m.SetColor("_Backing", side == 0 ? new Color(.72f,.28f,.25f) : new Color(.50f,.68f,.79f));
+                mats[key] = m; return m;
+            }
+        }
 		var keyPath = PieceArtResources.Key(rank);
 		var art = keyPath == null ? null : Resources.Load<Texture2D>(keyPath);
 		var artShader = art != null ? Resources.Load<Shader>("PieceFace") : null;
@@ -167,7 +213,7 @@ public class TabletopBoard : MonoBehaviour
 			m = new Material(artShader);
 			art.wrapMode = TextureWrapMode.Clamp;
 			m.mainTexture = art;
-			if (rank == "B" || rank == "F") m.SetFloat("_ArtBottom", .14f);
+			m.SetColor("_Backing", side == 0 ? new Color(.72f, .28f, .25f) : new Color(.50f, .68f, .79f));
 			mats[key] = m;
 			return m;
 		}
@@ -292,7 +338,7 @@ public class TabletopBoard : MonoBehaviour
 		lastRequested = Time.unscaledTime;
 		width = Mathf.Clamp(width, 400, 1400);
 		height = Mathf.Clamp(height, 300, 1050);
-		if (Layer == 30) view.orthographicSize = Mathf.Max(BoardHalfHeight, 5.6f * height / width);
+		if (Layer == 30 && (fitWidth != width || fitHeight != height)) FitPerspective(width, height);
 		if (!target || target.width != width || target.height != height)
 		{
 			if (target)
@@ -332,11 +378,11 @@ public class TabletopBoard : MonoBehaviour
 				tiles[screen].sharedMaterial = i == selected ? Mat("selected", new Color(1, .67f, .16f)) : i == to ? Mat("arrival", new Color(.47f, .78f, .62f)) : i == from ? Mat("departure", new Color(.81f, .65f, .38f)) : legal != null && legal[i] ? p != null ? Mat("attack", new Color(.95f, .39f, .18f)) : Mat("legal", new Color(.51f, .74f, .55f)) : Ground(screen);
 				if (p == null)
 					continue;
-				bodies[screen].sharedMaterial = p.side == 0 ? Mat("red", new Color(.65f, .16f, .13f)) : Mat("blue", new Color(.09f, .24f, .38f));
+				bodies[screen].sharedMaterial = p.side == 0 ? Mat("red", new Color(.45f, .115f, .105f)) : Mat("blue", new Color(.13f, .29f, .43f));
 				stickers[screen].sharedMaterial = Face(p.rank, p.side);
 				int numericRank;
 				bool numbered = int.TryParse(p.rank, out numericRank) && numericRank >= 1 && numericRank <= 10;
-				numbers[screen].text = numbered ? p.rank : "";
+				numbers[screen].text = numbered || p.rank == "B" || p.rank == "F" ? p.rank : "";
 			}
 
 			view.aspect = (float)width / height;
@@ -386,8 +432,11 @@ public class TabletopBoard : MonoBehaviour
 			tile.gameObject.SetActive(false);
 		root.transform.Find("Wooden tabletop").gameObject.SetActive(false);
 		root.transform.Find("Dark grid").gameObject.SetActive(false);
-		view.transform.position = new Vector3(0, 1.9f, -5);
-		view.transform.LookAt(new Vector3(0, .55f, 0));
+		root.transform.Find("Readable grid lines").gameObject.SetActive(false);
+		view.orthographic = true;
+		view.ResetProjectionMatrix();
+		view.transform.position = new Vector3(0, 3.9f, -3.9f);
+		view.transform.LookAt(new Vector3(0, .2f, 0));
 		view.orthographicSize = 1.35f;
 		var pose = BattleMotion.At(e.attacker, e.outcome, progress);
 		pieces[90].transform.localPosition = new Vector3(pose.attackerX, .025f, 0);
@@ -440,6 +489,7 @@ public class TabletopBoard : MonoBehaviour
 
 	void OnDestroy()
 	{
+		if (gridMesh) DestroyImmediate(gridMesh);
 		if (target)
 		{
 			target.Release();
