@@ -3,6 +3,10 @@ using System;
 // Presentation roles never depend on winner or chosen spectator perspective.
 public static class BattleMotion
 {
+	// Upright combat bases are the widest visible part. Keep a small contact gap.
+	public const float BaseWidth = .76f;
+	public const float ContactGap = .01f;
+	const float StartOffset = .85f;
 	public struct Pose
 	{
 		public float attackerX, defenderX, attackerFall, defenderFall;
@@ -15,12 +19,12 @@ public static class BattleMotion
 
 	public static Pose At(string attacker, int outcome, float progress)
 	{
-		float approach = (float)Math.Sin(Clamp(progress / .5f) * Math.PI / 2) * 1.05f;
+		float approach = (float)Math.Sin(Clamp(progress / .5f) * Math.PI / 2) * (2 * StartOffset - BaseWidth - ContactGap);
 		float t = Clamp((progress - .52f) / .45f), fall = t * t * (3 - 2 * t) * 88;
 		return new Pose
 		{
-			attackerX = -.85f + (attacker == "B" || attacker == "F" ? 0 : approach),
-			defenderX = .85f,
+			attackerX = -StartOffset + (attacker == "B" || attacker == "F" ? 0 : approach),
+			defenderX = StartOffset,
 			attackerFall = outcome <= 0 ? fall : 0,
 			defenderFall = outcome >= 0 ? -fall : 0
 		};

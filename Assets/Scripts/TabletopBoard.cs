@@ -89,6 +89,7 @@ public class TabletopBoard : MonoBehaviour
 		Box("Dark grid", new Vector3(0, -.015f, 0), new Vector3(10.08f, .08f, 10.08f), Mat("grid", new Color(.18f, .22f, .13f)), root.transform);
 		for (int i = 0; i < 100; i++)
 		{
+			bool upright = Layer == 29;
 			var pos = Position(i);
 			tiles[i] = Box("Square " + i, pos, new Vector3(.975f, .055f, .975f), Ground(i), root.transform, i).GetComponent<Renderer>();
 			var g = new GameObject("Piece " + i);
@@ -96,15 +97,15 @@ public class TabletopBoard : MonoBehaviour
 			g.transform.SetParent(root.transform, false);
 			g.transform.localPosition = pos;
 			pieces[i] = g;
-			Box("Foot", new Vector3(.014f, .064f, -.016f), new Vector3(.87f, .018f, .87f), Mat("rim", new Color(.12f, .15f, .17f)), g.transform, i);
-			bodies[i] = Box("Upright block", new Vector3(0, .181f, 0), new Vector3(.84f, .22f, .84f), Mat("red", new Color(.45f, .115f, .105f)), g.transform, i).GetComponent<Renderer>();
-			stickers[i] = Box("Illustrated face", new Vector3(0, .299f, 0), new Vector3(.80f, .80f, .012f), Mat("paper", new Color(.91f, .87f, .73f)), g.transform).GetComponent<Renderer>();
-			stickers[i].transform.localRotation = Quaternion.Euler(90, 0, 0);
+			Box("Foot", upright ? new Vector3(0,.10f,0) : new Vector3(.014f, .064f, -.016f), upright ? new Vector3(BattleMotion.BaseWidth,.14f,.4f) : new Vector3(.87f, .018f, .87f), Mat("rim", new Color(.12f, .15f, .17f)), g.transform, i);
+			bodies[i] = Box("Upright block", upright ? new Vector3(0,.52f,0) : new Vector3(0, .181f, 0), upright ? new Vector3(.69f,.8f,.11f) : new Vector3(.84f, .22f, .84f), Mat("red", new Color(.45f, .115f, .105f)), g.transform, i).GetComponent<Renderer>();
+			stickers[i] = Box("Illustrated face", upright ? new Vector3(0,.52f,-.06f) : new Vector3(0, .299f, 0), upright ? new Vector3(.59f,.69f,.014f) : new Vector3(.80f, .80f, .012f), Mat("paper", new Color(.91f, .87f, .73f)), g.transform).GetComponent<Renderer>();
+			stickers[i].transform.localRotation = Quaternion.Euler(upright ? 0 : 90, 0, 0);
 			var label = new GameObject("Rank");
 			label.layer = Layer;
 			label.transform.SetParent(g.transform, false);
-			label.transform.localPosition = new Vector3(-.365f, .31f, .355f);
-			label.transform.localRotation = Quaternion.Euler(90, 0, 0);
+			label.transform.localPosition = upright ? new Vector3(-.29f,.89f,-.086f) : new Vector3(-.365f, .31f, .355f);
+			label.transform.localRotation = Quaternion.Euler(upright ? 0 : 90, 0, 0);
 			var text = label.AddComponent<TextMesh>();
 			text.font = font;
 			text.fontSize = 128;
@@ -213,6 +214,7 @@ public class TabletopBoard : MonoBehaviour
 			m = new Material(artShader);
 			art.wrapMode = TextureWrapMode.Clamp;
 			m.mainTexture = art;
+			if (Layer == 29) { m.SetFloat("_ArtLeft",.11f);m.SetFloat("_ArtWidth",.78f);m.SetFloat("_ArtHeight",.72f);m.SetFloat("_ArtBottom",rank == "B" || rank == "F" ? .14f : .015f); }
 			m.SetColor("_Backing", side == 0 ? new Color(.72f, .28f, .25f) : new Color(.50f, .68f, .79f));
 			mats[key] = m;
 			return m;
@@ -435,8 +437,8 @@ public class TabletopBoard : MonoBehaviour
 		root.transform.Find("Readable grid lines").gameObject.SetActive(false);
 		view.orthographic = true;
 		view.ResetProjectionMatrix();
-		view.transform.position = new Vector3(0, 3.9f, -3.9f);
-		view.transform.LookAt(new Vector3(0, .2f, 0));
+		view.transform.position = new Vector3(0, 1.9f, -5);
+		view.transform.LookAt(new Vector3(0, .55f, 0));
 		view.orthographicSize = 1.35f;
 		var pose = BattleMotion.At(e.attacker, e.outcome, progress);
 		pieces[90].transform.localPosition = new Vector3(pose.attackerX, .025f, 0);
