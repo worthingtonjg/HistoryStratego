@@ -1,3 +1,4 @@
+import { renderClassState } from './class-status.mjs';
 import { createClassExit } from './class-exit.mjs';
 import { installMatchLog } from './match-log.mjs';
 import { installJoinPanel } from './join-panel.mjs';
@@ -12,20 +13,10 @@ let unityPromise;
 const unity = () => unityPromise ||= window.loadUnity().then(instance => (window.unityInstance = instance));
 const setStatus = s => {
 	status.textContent = s;
-	if (!teacherPage && s.startsWith('Class ended'))
-		showClassEnded();
 	const visibleStatus = document.querySelector('#connection-status');
 	if (visibleStatus)
 		visibleStatus.textContent = s;
 };
-function showClassEnded() {
-	const next = document.querySelector('#next-class');
-	if (next)
-		next.hidden = false;
-	const message = document.querySelector('#connection-status');
-	if (message)
-		message.textContent = 'Class ended. Ask your teacher for the next code.';
-}
 window.fetch = async (input, options = {}) => {
 	const url = new URL(typeof input === 'string' || input instanceof URL ? String(input) : input.url, location.href);
 	if (url.pathname === '/facts.json')
@@ -40,8 +31,8 @@ window.fetch = async (input, options = {}) => {
 			const value = await runtime.request(url.pathname.slice(5), JSON.parse(text), token);
 			if (value.classCode)
 				value.classCode = runtime.joinCode;
-			if (!teacherPage && value.phase === 'ended')
-				showClassEnded();
+			if (!teacherPage)
+				renderClassState(value, document.querySelector('#connection-status'), document.querySelector('#next-class'));
 			return new Response(JSON.stringify(value), {
 				status: value.error ? 400 : 200, headers: {
 					'Content-Type': 'application/json'

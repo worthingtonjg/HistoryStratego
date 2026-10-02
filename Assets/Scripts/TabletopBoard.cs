@@ -350,6 +350,16 @@ public class TabletopBoard : MonoBehaviour
 		dirty = true;
 	}
 
+	public void InvalidatePositions() { signature = ""; }
+	public void AnimateSwap(int from, int to, int rotate, float progress)
+	{
+		int a = rotate == 0 ? from : 99 - from, b = rotate == 0 ? to : 99 - to;
+		float t = Mathf.SmoothStep(0, 1, Mathf.Clamp01(progress));
+		Vector3 offset = Vector3.Cross((Position(b) - Position(a)).normalized, Vector3.up) * (.25f * Mathf.Sin(Mathf.PI * t));
+		pieces[a].transform.localPosition = Vector3.Lerp(Position(a), Position(b), t) + offset;
+		pieces[b].transform.localPosition = Vector3.Lerp(Position(b), Position(a), t) - offset;
+		dirty = true;
+	}
 	float battleFrame = -1;
 	public Texture Battle(Dispatch e, float progress)
 	{

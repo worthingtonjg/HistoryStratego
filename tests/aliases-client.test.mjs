@@ -27,10 +27,10 @@ test('commander client joins without a name and uses frozen match profiles', () 
 	assert.ok(containsCode(source, 'linkStyle.normal.textColor = linkColor;'));
 	assert.ok(containsCode(source, '(commander.side == 1 ? "Union" : "Confederate")'));
 	assert.ok(containsCode(source, 'TeacherPairLayout.MatchFor(pair, teacher.matches)'));
- assert.ok(source.includes('player.name'));
+	assert.ok(source.includes('player.name'));
 });
 test('commander overlay cannot pick the board and yields to mandatory combat and results', () => {
-	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen;'));
+	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen && !studentPaused;'));
 	assert.ok(containsCode(source, 'if (!commanderOpen && !readOnly && !EndgamePresentation.Terminal'));
 	assert.ok(containsCode(source, 'profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over"'));
 	assert.ok(containsCode(source, 'combatDismissUntil = Time.unscaledTime + .65f;'));

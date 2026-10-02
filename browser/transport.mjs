@@ -263,7 +263,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	});
 	function endedResult(route) {
 		return route === 'state' ? {
-			classCode: code, phase: 'ended', match: null, paired: false
+			classCode: code, phase: 'ended', classRetired: true, match: null, paired: false
 		} : {
 			error: 'Class ended. Ask for the new classroom code.'
 		};
