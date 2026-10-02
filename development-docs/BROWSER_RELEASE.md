@@ -10,7 +10,7 @@ Unity 6000.5.2f1 WebGL + Playroom SDK 0.0.97. Deployed runtime requires static H
 4. Students prepare and lock their own armies. The teacher can pause, resume, end and watch matches.
 5. **Add computer** adds a lightweight opponent using its own redacted player view. Respect the free development participant allowance.
 
-Hiding/disconnecting/suspending the teacher pauses play. For a local demonstration put the teacher in a separate visible window. Becoming Playroom transport host does not grant teacher controls.
+Hiding/disconnecting/suspending the teacher pauses play. This intentionally freezes all classroom clocks, including automatic battle continuation. Student background tabs do not pause the class: once a student has rendered combat and registered battle/ready, its five-second continuation runs in the visible teacher browser without further student polling. A student that never rendered/registered the combat must return first. This differs from the older always-running Node authority: the teacher browser must remain active. For a local demonstration put the teacher in a separate visible window. Becoming Playroom transport host does not grant teacher controls.
 
 ## Recovery and trust
 
