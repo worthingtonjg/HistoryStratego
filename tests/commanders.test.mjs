@@ -70,16 +70,16 @@ test('same-faction swaps change opponents without renaming; cross-faction swaps 
 	}, 'teacher');
 	for (const x of p)
 		assert.deepEqual(state(a, x).commander, x.commander);
-	assert.deepEqual(state(a, p[0]).match.playerNames, names);
-	assert.deepEqual(state(a, p[0]).match.commanders, profiles);
+	assert.deepEqual(m.playerNames, names);
+	assert.deepEqual(m.commanders, profiles);
 	m.events.push({
 		kind: 'combat', seq: 1, ack: [false, false], side: 0, from: 60, to: 50, attacker: '2', defender: '3', outcome: -1, text: 'Fixture combat'
 	});
 	a.call('teacher/start', {}, 'teacher');
 	assert.deepEqual([...a.matches.values()].map(x => x.players), [[p[2].player, p[1].player], [p[0].player, p[3].player]]);
-	assert.equal(state(a, p[0]).match.id, m.id);
-	assert.deepEqual(state(a, p[0]).match.playerNames, names);
-	assert.deepEqual(state(a, p[0]).match.commanders, profiles);
+	assert.notEqual(state(a, p[0]).match.id, m.id);
+	assert.deepEqual(m.playerNames, names);
+	assert.deepEqual(m.commanders, profiles);
 });
 test('odd and late arrivals get profiles immediately but remain unpaired until teacher action', () => {
 	const { a, players: p } = classroom(3);

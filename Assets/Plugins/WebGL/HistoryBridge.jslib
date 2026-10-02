@@ -1,4 +1,8 @@
 mergeInto(LibraryManager.library, {
+	HS_ClearMatchViews: function () {
+		if (window.historyCloseMatchLog)
+			window.historyCloseMatchLog();
+	},
 	HS_OpenMatchLog: function (matchId) {
 		if (window.historyOpenMatchLog)
 			window.historyOpenMatchLog(UTF8ToString(matchId));

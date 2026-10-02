@@ -140,6 +140,7 @@ public class MatchSummary
 public class SpectatorView
 {
 	public string classCode, phase, perspectiveName, error;
+	public bool roundEnded;
 	public MatchView match;
 	public PresenceConfig presence;
 }
@@ -322,6 +323,8 @@ public class HistoryGame : MonoBehaviour
 	static extern void HS_SaveTeacherGrant(string verifierId);
 	[DllImport("__Internal")]
 	static extern void HS_OpenMatchLog(string matchId);
+	[DllImport("__Internal")]
+	static extern void HS_ClearMatchViews();
 #endif
 	public void OpenTeacherGate(string unused)
 	{
@@ -584,17 +587,23 @@ public class HistoryGame : MonoBehaviour
 			else if (route == "teacher/spectate")
 			{
 				spectator = JsonUtility.FromJson<SpectatorView>(req.downloadHandler.text);
+				bool roundWasEnded = spectator.roundEnded;
 				if (spectator.match?.board != null)
 					for (int i = 0; i < spectator.match.board.Length; i++)
 						if (string.IsNullOrEmpty(spectator.match.board[i]?.rank))
 							spectator.match.board[i] = null;
 				SyncPresence(spectator.phase, spectator.presence);
 				error = "";
+				if (roundWasEnded)
+					ClearRoundViews();
 			}
 			else if (route.StartsWith("teacher/"))
 			{
+				bool newlyEnded = teacher?.phase != "ended";
 				teacher = JsonUtility.FromJson<TeacherView>(req.downloadHandler.text);
 				teacherMode = true;
+				if (teacher.phase == "ended" && (newlyEnded || route == "teacher/end"))
+					ClearRoundViews();
 				if (!routine)
 					error = "";
 				SyncPresence(teacher.phase, teacher.presence);
@@ -1085,7 +1094,7 @@ public class HistoryGame : MonoBehaviour
 		{
 			if (!TeacherActionPolicy.Visible(action, teacher.phase, side0, side1, hasMatches))
 				continue;
-			if (Button(35 + visibleAction * 150, 145, 140, action.ToUpperInvariant()))
+			if (Button(35 + visibleAction * 150, 145, 140, action == "end" ? "END ROUND" : action.ToUpperInvariant()))
 				Send("teacher/" + action, new Command());
 			visibleAction++;
 		}
@@ -1172,6 +1181,24 @@ public class HistoryGame : MonoBehaviour
 
 		Send("teacher/swap", new Command { a = swap, b = player.id });
 		swap = "";
+	}
+
+	void ClearRoundViews()
+	{
+		if (watchId != "")
+			nextPoll = 0;
+		watchId = "";
+		spectator = null;
+		swap = "";
+		if (teacher != null)
+		{
+			teacher.matches = Array.Empty<MatchSummary>();
+			teacher.phase = "ended";
+		}
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+		HS_ClearMatchViews();
+#endif
 	}
 
 	void DrawSpectator()

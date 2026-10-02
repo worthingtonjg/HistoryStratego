@@ -141,7 +141,7 @@ test('teacher-only recovery and spectator selection/battle do not mutate or gran
 	}, y.token);
 	assert.equal(a.call('teacher/state', {}, 'teacher').phase, 'paused');
 });
-test('ending and starting another round retains unread combat and rejects foreign archived acknowledgments', () => {
+test('ending a round archives unread combat without showing it in the new round and rejects foreign acknowledgments', () => {
 	const a = createAuthority({
 		timedSetup: false,
 		classCode: 'C', teacherKey: 'teacher'
@@ -162,8 +162,8 @@ test('ending and starting another round retains unread combat and rejects foreig
 	}, x.token);
 	a.call('teacher/end', {}, 'teacher');
 	a.call('teacher/start', {}, 'teacher');
-	assert.equal(a.call('state', {}, y.token).match.id, m.id);
-	assert.equal(a.call('state', {}, y.token).match.battle.attacker, '2');
+	assert.notEqual(a.call('state', {}, y.token).match.id, m.id);
+	assert.equal(m.events.at(-1).attacker, '2');
 	assert.throws(() => a.call('ack', {
 		matchId: m.id, seq: 1
 	}, z.token));
@@ -171,7 +171,7 @@ test('ending and starting another round retains unread combat and rejects foreig
 		matchId: m.id, seq: 1
 	}, y.token);
 	assert.notEqual(a.call('state', {}, y.token).match.id, m.id);
-	assert.equal(a.call('state', {}, x.token).match.id, m.id);
+	assert.notEqual(a.call('state', {}, x.token).match.id, m.id);
 });
 test('manual blue perspective survives combat and acknowledgments without exposing other moving ranks', () => {
 	const a = createAuthority({

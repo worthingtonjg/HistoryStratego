@@ -132,7 +132,7 @@ test('pause freezes countdown, resume retains remaining time, end cancels and a 
 	f.a.call('teacher/end', {}, 'teacher');
 	f.advance(60000);
 	f.a.tick();
-	assert.equal(f.call(0, 'state').match.ready[0], false);
+	assert.equal(f.call(0, 'state').match, null);
 	assert.throws(() => f.call(0, 'setup/begin'), /not enabled/);
 	f.call(1, 'state');
 	f.a.call('teacher/start', {}, 'teacher');

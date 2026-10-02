@@ -51,7 +51,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			tick();
 		const m = [...archives.values()].find(m => {
 			const side = m.players.indexOf(p.id);
-			return side >= 0 && m.events.some(e => e.kind === 'combat' && !e.ack[side]);
+			return !m.roundEnded && side >= 0 && m.events.some(e => e.kind === 'combat' && !e.ack[side]);
 		}) || find(p);
 		return {
 			classCode, phase, presence, player: p.id, nickname: p.name, commander: p.commander || null, paired: isPaired(p), match: m ? {
@@ -116,6 +116,10 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			if (route === 'teacher/spectate') {
 				teacher(token);
 				const m = matches.get(b.matchId);
+				if (!m && archives.get(b.matchId)?.roundEnded)
+					return {
+						classCode, phase, presence, match: null, roundEnded: true
+					};
 				if (!m)
 					throw Error('Match not found');
 				return {
@@ -197,7 +201,13 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 					for (const m of matches.values()) {
 						pauseSetup(m, now());
 						m.setupCancelled = true;
+						m.roundEnded = true;
+						m.archived = true;
+						archives.set(m.id, m);
 					}
+					matches.clear();
+					pairedCount = 0;
+					emoteRecords.clear();
 					phase = 'ended';
 				}
 				else if (action === 'release-reveal') {

@@ -1,3 +1,4 @@
+import { createClassExit } from './class-exit.mjs';
 import { installMatchLog } from './match-log.mjs';
 import { installJoinPanel } from './join-panel.mjs';
 import { acceptUnityTeacherGate } from './teacher-access.mjs';
@@ -135,6 +136,7 @@ if (teacherPage) {
 		dialog: document.querySelector('#match-log'), title: document.querySelector('#match-log-title'), list: document.querySelector('#match-log-events'), closeButton: document.querySelector('#close-match-log'), refreshButton: document.querySelector('#refresh-match-log'), request: (route, body) => runtime.request(route, body), document
 	});
 	window.historyOpenMatchLog = id => runtime?.role === 'teacher' ? matchLog.open(id) : undefined;
+	window.historyCloseMatchLog = () => matchLog.close();
 	installJoinPanel({
 		button: document.querySelector('#show-join'), dialog: document.querySelector('#join-panel'), codeElement: document.querySelector('#projector-code'), urlElement: document.querySelector('#student-address'), closeButton: document.querySelector('#close-join'), getCode: () => runtime?.joinCode || ''
 	});
@@ -143,24 +145,22 @@ if (teacherPage) {
 		if (teacherAccess)
 			start('teacher');
 	};
-	document.querySelector('#new-class').onclick = async () => {
-		if (!runtime || runtime.role !== 'teacher' || !teacherAccess || starting)
-			return;
-		if (!window.confirm('End this class for every student and create a fresh classroom? The old code will stop working.'))
-			return;
-		starting = true;
-		try {
-			await runtime.retire();
-			sessionStorage.removeItem('history.browserSession');
-			sessionStorage.setItem('history.newClass', '1');
-			// Reinitializing Playroom in a clean page avoids reusing its previous room/session.
-			location.replace(new URL('../admin/', import.meta.url));
-		}
-		catch (e) {
+	const exitClass = createClassExit({
+		getRuntime: () => runtime,
+		isAllowed: () => !!teacherAccess && !starting,
+		confirm: message => window.confirm(message),
+		storage: sessionStorage,
+		navigate: () => location.replace(new URL('../admin/', import.meta.url)),
+		onPending: () => {
+			starting = true;
+		},
+		onError: error => {
 			starting = false;
-			setStatus(e.message);
+			setStatus(error.message);
 		}
-	};
+	});
+	document.querySelector('#new-class').onclick = () => exitClass(true);
+	document.querySelector('#end-class').onclick = () => exitClass(false);
 	panel.hidden = true;
 	document.querySelector('#game').hidden = false;
 	unity().catch(e => {

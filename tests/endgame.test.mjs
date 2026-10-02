@@ -46,8 +46,9 @@ test('teacher-ended game has no invented winner; completed roster remains eligib
 	a.call('teacher/start', {}, 'test');
 	const m = [...a.matches.values()][0];
 	a.call('teacher/end', {}, 'test');
-	assert.equal(a.call('state', {}, r.token).match.winner, -1);
-	assert.equal(a.call('teacher/state', {}, 'test').matches[0].id, m.id);
+	assert.equal(a.call('state', {}, r.token).match, null);
+	assert.equal(m.winner, -1);
+	assert.equal(a.call('teacher/state', {}, 'test').matches.length, 0);
 	a.call('teacher/start', {}, 'test');
 	for (const t of [r.token, b.token]) {
 		const s = a.call('state', {}, t);

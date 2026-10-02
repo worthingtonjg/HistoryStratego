@@ -57,7 +57,7 @@ test('teacher desk class-wide Pause/Resume/End governs two active matches withou
 		assert.equal(s.phase, 'paused');
 		assert.equal(s.match.phase, 'play');
 		assert.throws(() => a.call('select', {
-			from: 60, seq: s.match.seq
+			from: 60, seq: s.match?.seq ?? 0
 		}, player.token), /not enabled/);
 	}
 	a.call('teacher/resume', {}, 'teacher');
@@ -67,13 +67,15 @@ test('teacher desk class-wide Pause/Resume/End governs two active matches withou
 			from, seq: s.match.seq
 		}, p[i].token);
 	}
+	const endedMatches = [...a.matches.values()];
 	a.call('teacher/end', {}, 'teacher');
+	assert(endedMatches.every(m => m.winner === -1));
 	for (const player of p) {
 		const s = a.call('state', {}, player.token);
 		assert.equal(s.phase, 'ended');
-		assert.equal(s.match.winner, -1);
+		assert.equal(s.match, null);
 		assert.throws(() => a.call('select', {
-			from: 60, seq: s.match.seq
+			from: 60, seq: s.match?.seq ?? 0
 		}, player.token), /not enabled/);
 	}
 });
