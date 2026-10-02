@@ -826,6 +826,8 @@ public class HistoryGame : MonoBehaviour
 		while (style.fontSize > 12 && Mathf.Max(style.CalcSize(new GUIContent(left)).x, style.CalcSize(new GUIContent(right)).x) + 70 > 300)
 			style.fontSize--;
 		float gap = 70, w0 = Mathf.Min(300, Mathf.Max(style.CalcSize(new GUIContent(left)).x, style.CalcSize(new GUIContent(right)).x) + 70), w1 = w0, x = 600 - gap / 2 - w0;
+		style.fontSize = 27;
+		style.padding = new RectOffset(0, 0, 0, 0);
 		for (int column = 0; column < 2; column++)
 		{
 			int side = 1 - column;
@@ -837,6 +839,9 @@ public class HistoryGame : MonoBehaviour
 			var portraitRect = new Rect(xx + 4, matchHeaderY + 1, 38, 38);
 			var nameRect = new Rect(xx + 46, matchHeaderY, ww - 46, 42);
 			var commander = m.commanders != null && side < m.commanders.Length ? m.commanders[side] : null;
+			string fullName = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : m.playerNames != null && side < m.playerNames.Length && !string.IsNullOrEmpty(m.playerNames[side]) ? m.playerNames[side] : "Player";
+			string visibleName = HeaderName.Fit(fullName, nameRect.width, text => style.CalcSize(new GUIContent(text)).x);
+			float visibleWidth = style.CalcSize(new GUIContent(visibleName)).x;
 			var portrait = commander != null ? CommanderPortrait(commander.id) : null;
 			if (portrait != null)
 				GUI.DrawTexture(portraitRect, portrait, ScaleMode.ScaleToFit);
@@ -855,11 +860,11 @@ public class HistoryGame : MonoBehaviour
 				if (!commanderOpen)
 					LinkPointer(linkRect);
 				GUI.color = GUI.contentColor;
-				GUI.DrawTexture(new Rect(nameRect.x + 8, matchHeaderY + 37, nameRect.width - 16, 1), Texture2D.whiteTexture);
+				GUI.DrawTexture(new Rect(nameRect.center.x - visibleWidth / 2, matchHeaderY + 37, visibleWidth, 1), Texture2D.whiteTexture);
 				GUI.color = Color.white;
 			}
 
-			GUI.Label(nameRect, column == 0 ? left : right, style);
+			GUI.Label(nameRect, new GUIContent(visibleName, fullName), style);
 			if (active)
 			{
 				var small = new GUIStyle(GUI.skin.label)
