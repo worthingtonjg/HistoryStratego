@@ -134,6 +134,7 @@ public class MatchSummary
 	public string id, phase;
 	public string[] players, playerNames;
 	public int winner;
+	public int[] captures;
 }
 
 [Serializable]
@@ -1211,16 +1212,17 @@ public class HistoryGame : MonoBehaviour
 					nextPoll = 0;
 				}
 
-				if (Button(940, y + 8, 130, "View log"))
-				{
-#if UNITY_WEBGL && !UNITY_EDITOR
-					HS_OpenMatchLog(match.id);
-#endif
-				}
 			}
 
 			for (int i = 0; i < pair.members.Length; i++)
-				DrawTeacherSeat(pair.members[i], 15 + (i % 2) * 535, y + 52, 515);
+			{
+				var player = pair.members[i];
+				float x = 15 + (i % 2) * 535;
+				DrawTeacherSeat(player, x, y + 52, 515);
+				int side = match?.players != null ? Array.IndexOf(match.players, player.id) : -1;
+				if (side >= 0 && match.captures != null && side < match.captures.Length)
+					GUI.Label(new Rect(x + 6, y + 92, 500, 26), "Captured: " + match.captures[side] + " enemy pieces");
+			}
 			y += 140;
 		}
 

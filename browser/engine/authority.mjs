@@ -5,7 +5,7 @@ import { initTurn, tickTurn, turnView, setupBlocked, checkTurnGate } from './tur
 import { initSetup, tickSetup, pauseSetup, resumeSetup, setupView, setupAction } from './setup-clock.mjs';
 import { installPresentation } from './presentation.mjs';
 import { COMMANDERS, assignCommander, pairRoster, seatAvailable } from './commanders.mjs';
-import { createMatch, setup, move, view, shuffle, select, acknowledge, releaseReveal } from './game.mjs';
+import { captureTotals, createMatch, setup, move, view, shuffle, select, acknowledge, releaseReveal } from './game.mjs';
 export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), classCode = randomBytes(2).toString('hex').toUpperCase(), snapshot = null, commanderPool = COMMANDERS, now = Date.now, timedSetup = true, timedTurns = true } = {}) {
 	const presence = snapshot?.presence || {
 		gameId: 'zN6Oyc9pDGlt60CITwGe', roomCode: randomBytes(2).toString('hex').toUpperCase(), sessionId: randomBytes(16).toString('hex')
@@ -63,7 +63,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		classCode, phase, presence, roster: order.map((id, i) => ({
 			id, name: students.get(id).name, commander: students.get(id).commander || null, side: students.get(id).commander?.side, connected: seatAvailable(students.get(id), now()), pair: i < pairedCount ? Math.floor(i / 2) + 1 : 0, waiting: (phase === 'active' || phase === 'paused') ? ![...matches.values()].some(m => m.players.includes(id)) : !isPaired(students.get(id))
 		})), matches: [...matches.values()].map(m => ({
-			id: m.id, players: m.players, playerNames: m.playerNames, phase: m.phase, winner: m.winner
+			id: m.id, players: m.players, playerNames: m.playerNames, phase: m.phase, winner: m.winner, captures: captureTotals(m)
 		}))
 	});
 	const tick = () => {

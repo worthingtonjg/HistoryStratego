@@ -21,8 +21,15 @@ const check = (ok, msg) => {
 };
 export function createMatch(players) {
 	return {
-		id: randomUUID(), players, board: Array(100).fill(null), ready: [false, false], phase: 'setup', turn: 0, seq: 0, winner: -1, history: [[], []], events: [], selection: null, reveal: null, recovery: [], requests: new Map()
+		id: randomUUID(), players, board: Array(100).fill(null), ready: [false, false], phase: 'setup', turn: 0, seq: 0, winner: -1, history: [[], []], captures: [0, 0], events: [], selection: null, reveal: null, recovery: [], requests: new Map()
 	};
+}
+// Legacy checkpoints predate counters. Both ready armies began with exactly 40
+// pieces (enforced by setup); combat is the only operation removing pieces.
+export function captureTotals(m) {
+ if (Array.isArray(m.captures) && m.captures.length === 2) return [...m.captures];
+ if (!m.ready?.every(Boolean)) return [0, 0];
+ return [0, 1].map(side => 40 - m.board.filter(p => p?.side === 1 - side).length);
 }
 export function setup(m, side, ranks) {
 	check(m.phase === 'setup' && !m.ready[side], 'Setup is locked');
@@ -84,10 +91,13 @@ export function move(m, side, from, to, seq, requestId) {
 	check(m.turn === side, 'Wait for your turn');
 	check(legal(m, side, from, to), 'Illegal move');
 	const p = m.board[from], q = m.board[to], targets = destinations(m, side, from);
+	m.captures ??= captureTotals(m);
 	m.board[from] = null;
 	m.selection = null;
 	if (q) {
 		const outcome = resolve(p.rank, q.rank);
+		if (outcome >= 0) m.captures[side]++;
+		if (outcome <= 0) m.captures[1 - side]++;
 		m.events.push({
 			kind: 'combat', side, outcome, ack: [false, false], released: [false, false], targets, moving: p.rank, seq: m.seq + 1, text: NAMES[p.rank] + ' attacks ' + NAMES[q.rank] + ': ' + (outcome === 0 ? 'both removed' : outcome > 0 ? 'attacker wins' : 'defender holds'), from, to, attacker: p.rank, defender: q.rank
 		});
