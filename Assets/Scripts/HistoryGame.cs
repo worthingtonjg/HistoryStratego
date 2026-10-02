@@ -322,15 +322,24 @@ public class HistoryGame : MonoBehaviour
 		teacherGateStatus = "";
 	}
 
+	Texture2D brandLogo;
+	void DrawBrandLogo(Rect area)
+	{
+		if (brandLogo == null)
+			brandLogo = Resources.Load<Texture2D>("BrandLogo");
+		if (brandLogo != null)
+			GUI.DrawTexture(area, brandLogo, ScaleMode.ScaleToFit, true);
+	}
+
 	void DrawTeacherGate()
 	{
 		Color oldColor = GUI.color, oldBackground = GUI.backgroundColor, oldContent = GUI.contentColor;
 		GUI.color = new Color(.063f, .106f, .129f);
 		GUI.DrawTexture(new Rect(-2000, -2000, 6000, 6000), Texture2D.whiteTexture);
 		GUI.color = new Color(.12f, .19f, .23f);
-		GUI.DrawTexture(new Rect(240, 165, 720, 515), Texture2D.whiteTexture);
+		GUI.DrawTexture(new Rect(240, 120, 720, 650), Texture2D.whiteTexture);
 		GUI.color = new Color(.89f, .78f, .45f);
-		GUI.DrawTexture(new Rect(240, 165, 720, 4), Texture2D.whiteTexture);
+		GUI.DrawTexture(new Rect(240, 120, 720, 4), Texture2D.whiteTexture);
 		GUI.color = Color.white;
 		GUI.contentColor = new Color(.92f, .95f, .96f);
 		var heading = new GUIStyle(GUI.skin.label)
@@ -339,13 +348,13 @@ public class HistoryGame : MonoBehaviour
 			fontStyle = FontStyle.Bold,
 			wordWrap = true
 		};
-		GUI.Label(new Rect(280, 210, 640, 52), "Civil War: Hidden Orders", heading);
+		DrawBrandLogo(new Rect(400, 155, 400, 200));
 		var body = new GUIStyle(GUI.skin.label)
 		{
 			fontSize = 18,
 			wordWrap = true
 		};
-		GUI.Label(new Rect(280, 280, 640, 55), "Teacher access\nEnter your key to open your classroom.", body);
+		GUI.Label(new Rect(280, 375, 640, 55), "Teacher access\nEnter your key to open your classroom.", body);
 		var field = new GUIStyle(GUI.skin.textField)
 		{
 			fontSize = 22,
@@ -356,7 +365,7 @@ public class HistoryGame : MonoBehaviour
 		field.normal.textColor = Color.white;
 		field.focused.textColor = Color.white;
 		GUI.backgroundColor = new Color(.137f, .212f, .251f);
-		teacherEntryKey = GUI.PasswordField(new Rect(280, 355, 640, 54), teacherEntryKey, '*', 200, field);
+		teacherEntryKey = GUI.PasswordField(new Rect(280, 450, 640, 54), teacherEntryKey, '*', 200, field);
 		var submit = new GUIStyle(GUI.skin.button)
 		{
 			fontSize = 19,
@@ -369,7 +378,7 @@ public class HistoryGame : MonoBehaviour
 		submit.hover.textColor = submit.normal.textColor;
 		submit.active.textColor = submit.normal.textColor;
 		GUI.backgroundColor = new Color(.89f, .78f, .45f);
-		if (GUI.Button(new Rect(280, 435, 640, 52), "Open teacher desk", submit))
+		if (GUI.Button(new Rect(280, 530, 640, 52), "Open teacher desk", submit))
 		{
 			if (TeacherGateVerifier.Accepts(teacherEntryKey))
 			{
@@ -386,9 +395,9 @@ public class HistoryGame : MonoBehaviour
 		}
 
 		GUI.contentColor = new Color(1f, .83f, .48f);
-		GUI.Label(new Rect(280, 510, 640, 50), teacherGateStatus, body);
+		GUI.Label(new Rect(280, 605, 640, 50), teacherGateStatus, body);
 		GUI.contentColor = new Color(.70f, .77f, .80f);
-		GUI.Label(new Rect(280, 600, 640, 45), "A successful unlock is remembered in this browser.", new GUIStyle(body) { fontSize = 15 });
+		GUI.Label(new Rect(280, 700, 640, 45), "A successful unlock is remembered in this browser.", new GUIStyle(body) { fontSize = 15 });
 		GUI.color = oldColor;
 		GUI.backgroundColor = oldBackground;
 		GUI.contentColor = oldContent;
@@ -734,7 +743,8 @@ public class HistoryGame : MonoBehaviour
 			fontStyle = FontStyle.Bold,
 			alignment = TextAnchor.MiddleCenter
 		};
-		GUI.Label(new Rect(30, 14, 1140, 36), "CIVIL WAR: HIDDEN ORDERS", titleStyle);
+		DrawBrandLogo(new Rect(30, 13, 116, 58));
+		GUI.Label(new Rect(160, 14, 1010, 36), "CIVIL WAR: HIDDEN ORDERS", titleStyle);
 		GUI.contentColor = new Color(.85f, .73f, .48f);
 		var subtitleStyle = new GUIStyle(GUI.skin.label)
 		{

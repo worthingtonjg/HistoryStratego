@@ -13,12 +13,12 @@ export async function unlockTeacher(page) {
 			type: 'mouseReleased', button: 'left', clickCount: 1, ...p
 		});
 	};
-	await click(await point(550, 303));
+	await click(await point(550, 477));
 	const key = (await readFile('LocalConfig/teacher-key.txt', 'utf8')).replace(/[\r\n]+$/, '');
 	if (key.length < 8)
 		throw Error('Local teacher key is not configured.');
 	await page.call('Input.insertText', {
 		text: key
 	});
-	await click(await point(425, 365));
+	await click(await point(550, 556));
 }
