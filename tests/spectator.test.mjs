@@ -32,7 +32,7 @@ test('spectator endpoint requires teacher authorization; never accepts a student
 test('spectator choice stays fixed across turns and polls; explicit switch redacts the other army', () => {
 	const { a, p, ids } = fixture();
 	let s = a.call('teacher/spectate', {
-		matchId: ids[0], reveal: true, side: 1
+		matchId: ids[0], reveal: true, side: 1, perspective: 'red'
 	}, 'teacher');
 	assert.equal(s.match.side, 0);
 	assert.deepEqual(s.match.playerNames, p.slice(0, 2).map(x => a.call('state', {}, x.token).nickname));
@@ -58,7 +58,7 @@ test('spectator choice stays fixed across turns and polls; explicit switch redac
 	}, 'teacher').match.side, 1);
 	assert.equal(a.call('teacher/spectate', {
 		matchId: ids[1]
-	}, 'teacher').match.side, 0);
+	}, 'teacher').match.side, -1);
 	assert.equal(a.call('teacher/spectate', {
 		matchId: ids[0]
 	}, 'teacher').match.side, 1);

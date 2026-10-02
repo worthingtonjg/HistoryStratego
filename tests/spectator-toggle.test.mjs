@@ -4,11 +4,11 @@ import { readFileSync } from 'node:fs';
 import { createAuthority } from '../server/server.mjs';
 test('spectator toggle uses returned side and a single busy-guarded absolute perspective request', () => {
 	const source = readFileSync('Assets/Scripts/HistoryGame.cs', 'utf8').split('void DrawSpectator()')[1].split('void DrawStudent()')[0];
-	assert(source.includes('int targetSide = m.side == 0 ? 1 : 0;'));
-	assert(source.includes('previousEnabled && !ActionBusy && (m.side == 0 || m.side == 1)'));
+	assert(source.includes('string targetPerspective = NextSpectatorPerspective(m.side);'));
+	assert(source.includes('previousEnabled && !ActionBusy && m.side >= -1 && m.side <= 1'));
 	assert.equal((source.match(/Send\("teacher\/spectate"/g) || []).length, 1);
-	assert(source.includes('"Switch to " + SideName(m, targetSide)'));
-	assert(source.includes('perspective = targetSide == 0 ? "red" : "blue"'));
+	assert(source.includes('"Switch perspectives"'));
+	assert(source.includes('perspective = targetPerspective'));
 	assert(!source.includes('"ack"'));
 });
 test('opposite-view requests persist on polls and leave match and acknowledgment state unchanged', () => {
@@ -27,9 +27,9 @@ test('opposite-view requests persist on polls and leave match and acknowledgment
 		matchId: m.id
 	}, 'test-teacher');
 	for (let i = 0; i < 4; i++) {
-		const side = 1 - view.match.side;
+		const side = view.match.side === -1 ? 1 : view.match.side === 1 ? 0 : -1;
 		view = a.call('teacher/spectate', {
-			matchId: m.id, perspective: side === 0 ? 'red' : 'blue'
+			matchId: m.id, perspective: side === -1 ? 'neutral' : side === 1 ? 'blue' : 'red'
 		}, 'test-teacher');
 		assert.equal(view.match.side, side);
 		assert.equal(a.call('teacher/spectate', {

@@ -114,7 +114,7 @@ test('teacher-only recovery and spectator selection/battle do not mutate or gran
 		from: 60, seq: 0
 	}, x.token);
 	assert.equal(a.call('teacher/spectate', {
-		matchId: m.id
+		matchId: m.id, perspective:'red'
 	}, 'teacher').match.selection.from, 60);
 	a.call('move', {
 		from: 60, to: 30, seq: 0, requestId: 'attack'

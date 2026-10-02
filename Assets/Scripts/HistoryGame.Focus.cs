@@ -16,6 +16,8 @@ public partial class HistoryGame
         boardFocus = !boardFocus; focusMessages = false; commanderOpen = false; presetMenuOpen = false;
         GUIUtility.hotControl = 0; WakeRendering();
     }
+    static string NextSpectatorPerspective(int side) => side == -1 ? "blue" : side == 1 ? "red" : "neutral";
+    static string SpectatorPerspectiveName(int side) => side == -1 ? "Neutral" : side == 1 ? "Union" : "Confederate";
     Rect FocusBoardRect()
     {
         float size = Mathf.Min(Screen.width, Screen.height);
@@ -63,11 +65,11 @@ public partial class HistoryGame
         DrawBoard(m,editing,teacherMode);
         if(suppress)input.type=savedType;
         FocusBackground(new Rect(0,bottom-4,width,66));
-        if(GUI.Button(normalRect,"Normal view")){boardFocus=false;focusMessages=false;return;}
+        if(GUI.Button(normalRect,"Toggle Zoom")){boardFocus=false;focusMessages=false;return;}
         GUI.enabled=!ActionBusy&&!paused&&!blocked;
 
         if(teacherMode){
-            if(GUI.Button(new Rect(x,bottom,available,60),"Switch perspective")) Send("teacher/spectate",new Command{matchId=m.id,perspective=m.side==0?"blue":"red"});
+            if(GUI.Button(new Rect(x,bottom,available,60),"Switch perspectives")) Send("teacher/spectate",new Command{matchId=m.id,perspective=NextSpectatorPerspective(m.side)});
         } else if(editing){
             float half=(available-8)/2;
             if(GUI.Button(new Rect(x,bottom,half,60),"Shuffle")) {
@@ -84,13 +86,13 @@ public partial class HistoryGame
         FocusBackground(new Rect(0,0,width,66));
         string status=paused?"Paused by teacher":m.phase=="setup"?teacherMode?"Formation setup (read-only)":m.ready[m.side]?"Waiting for opponent formation":"Formation: "+Math.Ceiling(SetupRemaining(m)/1000)+"s":m.phase=="over"?"Match finished":(teacherMode?PlayerName(m,m.turn)+" to move":m.turn==m.side?"Your turn":PlayerName(m,m.turn)+" to move")+(m.turnClock?.enabled==true?" | "+Math.Ceiling(m.turnClock.remainingMs/1000)+"s":"");
         GUI.Label(new Rect(8,3,width-16,30),status,FocusStyle(21));
-        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SideName(m,m.side):editing?"Tap two pieces to swap":error!=""?error:SideName(m,m.side),FocusStyle(16));
+        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SpectatorPerspectiveName(m.side):editing?"Tap two pieces to swap":error!=""?error:SideName(m,m.side),FocusStyle(16));
         FocusLegacy(()=>DrawBattle(m,teacherMode),true);
         if(m.phase=="over"&&m.battle?.kind!="combat")FocusLegacy(()=>DrawEndgame(m,teacherMode));
         if(paused){focusMessages=false;FocusNotice("Paused by teacher","Please wait. Your game resumes when your teacher is ready.");}
-        else if(blocked)FocusNotice("Time's up",m.setupBlocked?"Formation locked. Waiting for the setup notice to finish.":"An automatic legal move will be made. Please wait.");
-        else if(tipVisible&&!teacherMode){FocusNotice("Strategy tip",BattleTips.Text(battleTips.Active)+"\nTap to dismiss.");if(input.type==EventType.Repaint)paintedTip=tipKey+":"+battleTips.Active;}
-        else if(reminderVisible&&!teacherMode&&m.phase=="play"&&m.battle?.kind!="combat")FocusNotice("Your turn",ReadableTiming.Reminder(reminderKey));
+        else if(blocked)DrawDeadlineNotice(m);
+        else if(tipVisible&&!teacherMode){DrawTutorialTip();}
+        else if(reminderVisible&&!teacherMode&&m.phase=="play"&&m.battle?.kind!="combat")DrawTurnReminder();
         if(!paused&&!blocked)DrawPresetNotification(m);
         if(focusMessages&&!paused&&!blocked&&!teacherMode){
             float menuWidth=Mathf.Min(width-24,480),row=60,menuHeight=Mathf.Min(height-150,row*6+12);
@@ -105,11 +107,11 @@ public partial class HistoryGame
     }
     void DrawFocusMessage(MatchView m,EmoteView message,string name)
     {
-        var rect=new Rect(12,72,Screen.width-24,96);FocusBackground(rect);
+        var rect=TopMessageRect(true);FocusBackground(rect);
         var commander=m.commanders!=null&&message.side<m.commanders.Length?m.commanders[message.side]:null;
         var portrait=commander!=null?CommanderPortrait(commander.id):null;
-        if(portrait!=null)GUI.DrawTexture(new Rect(20,80,64,64),portrait,ScaleMode.ScaleToFit);
-        GUI.Label(new Rect(92,77,Screen.width-116,34),name,FocusStyle(16));
-        GUI.Label(new Rect(92,110,Screen.width-116,50),message.text,FocusStyle(19));
+        if(portrait!=null)GUI.DrawTexture(new Rect(rect.x+8,rect.y+8,64,64),portrait,ScaleMode.ScaleToFit);
+        GUI.Label(new Rect(rect.x+80,rect.y+5,rect.width-92,34),name,FocusStyle(16));
+        GUI.Label(new Rect(rect.x+80,rect.y+38,rect.width-92,80),message.text,FocusStyle(19));
     }
 }

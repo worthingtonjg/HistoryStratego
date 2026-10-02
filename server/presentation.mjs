@@ -14,19 +14,20 @@ export function installPresentation(authority) {
 		const m = result.match && authority.matches.get(result.match.id);
 		if (route === 'teacher/spectate' && m) {
 			if (b.perspective) {
-				if (!['red', 'blue'].includes(b.perspective))
-					throw Error('Choose red or blue');
-				choices.set(m.id, b.perspective === 'red' ? 0 : 1);
+				if (!['neutral', 'blue', 'red'].includes(b.perspective))
+					throw Error('Choose neutral, blue or red');
+				choices.set(m.id, b.perspective === 'neutral' ? -1 : b.perspective === 'blue' ? 1 : 0);
 			}
-			const side = choices.get(m.id) ?? 0, snapshot = view(m, side, {
+			const side = choices.get(m.id) ?? -1, snapshot = view(m, side, {
 				spectator: true
 			});
 			// Movement never reveals the unselected army's ranks; combat still reveals both participants.
 			snapshot.events = snapshot.events.map(e => e.kind === 'combat' || e.side === side ? e : {
 				...e, moving: '?'
 			});
+			if (side === -1) { snapshot.selection = null; snapshot.selectionOptions = []; snapshot.events = snapshot.events.map(e => ({...e, targets:[]})); }
 			return {
-				...result, perspectiveName: names(m)[side], match: {
+				...result, perspectiveName: side === -1 ? 'Neutral' : names(m)[side], match: {
 					...snapshot, ...authority.clockView?.(m), playerNames: names(m), commanders: m.commanders || []
 				}
 			};

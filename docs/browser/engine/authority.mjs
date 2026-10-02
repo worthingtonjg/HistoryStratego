@@ -11,6 +11,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		gameId: 'zN6Oyc9pDGlt60CITwGe', roomCode: randomBytes(2).toString('hex').toUpperCase(), sessionId: randomBytes(16).toString('hex')
 	};
 	const students = new Map(), tokens = new Map(), matches = new Map(), archives = new Map();
+	const perspectiveChoices = new Map(snapshot?.perspectives || []);
 	const removedStudents = new Map(snapshot?.removedStudents || []), revokedTokens = new Set(snapshot?.revokedTokens || []);
 	const emoteRecords = new Map(snapshot?.emotes || []);
 	let order = [], phase = 'waiting', pairedCount = snapshot?.pairedCount ?? (snapshot?.matches?.length || 0) * 2;
@@ -87,7 +88,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		tick, clockView: m => ({
 			setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), ...presetView(emoteRecords, m, -1, now())
 		}),
-		exportSnapshot: () => ({phase, order, pairedCount, presence, removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices: new Map(snapshot?.perspectives || []),
+		exportSnapshot: () => ({phase, order, pairedCount, presence, perspectives:[...perspectiveChoices], removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices: perspectiveChoices,
 		call(route, b = {}, token = '') {
 			if (revokedTokens.has(token)) {
 				if (route === 'state' || route === 'join') return {classCode, phase:'removed', removed:true, match:null, paired:false};

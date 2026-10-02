@@ -68,7 +68,7 @@ try {
 	assert(stateReads >= 2, 'Unity did not poll fixture state');
 	await new Promise(r => setTimeout(r, 1800));
  await page.wait('window.historyBoardFocusAvailable===true');assert.equal(await page.evaluate('window.historyBoardFocusActive'),false);
- await page.evaluate("unityInstance.SendMessage('HistoryGame','ToggleBoardFocus')");await page.wait('window.historyBoardFocusActive===true');await new Promise(r=>setTimeout(r,800));
+ if(process.env.HISTORY_INTERNAL_FOCUS==='1'){await page.call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});await page.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{x:310,y:30,id:0,radiusX:3,radiusY:3,force:1}]});await new Promise(r=>setTimeout(r,100));await page.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}else await page.evaluate("unityInstance.SendMessage('HistoryGame','ToggleBoardFocus')");await page.wait('window.historyBoardFocusActive===true');await new Promise(r=>setTimeout(r,800));
  await page.screenshot('Logs/focus-portrait.png');
  const touch=process.env.HISTORY_TOUCH==='1';if(touch)await page.call('Emulation.setTouchEmulationEnabled',{enabled:true,maxTouchPoints:1});
  const clickPixel=async(q)=>{if(touch){await page.call('Input.dispatchTouchEvent',{type:'touchStart',touchPoints:[{...q,id:0,radiusX:3,radiusY:3,force:1}]});await new Promise(r=>setTimeout(r,100));await page.call('Input.dispatchTouchEvent',{type:'touchEnd',touchPoints:[]});}else{await page.call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,...q});await new Promise(r=>setTimeout(r,100));await page.call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,...q});}};

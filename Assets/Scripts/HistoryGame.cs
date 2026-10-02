@@ -803,15 +803,20 @@ public partial class HistoryGame : MonoBehaviour
 	{
 		GUI.matrix = Matrix4x4.identity;
 		rawPointer = Event.current.mousePosition;
-		float scale = Mathf.Min(Screen.width / 1200f, Screen.height / 900f);
-		GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1200f * scale) / 2f, (Screen.height - 900f * scale) / 2f, 0), Quaternion.identity, new Vector3(scale, scale, 1));
 		var profileMatch = teacherMode ? (watchId != "" ? spectator?.match : null) : StudentMatch();
 		bool focusAvailable = profileMatch != null && !NeedsIntro(profileMatch);
 #if UNITY_WEBGL && !UNITY_EDITOR
 		HS_FocusState(focusAvailable ? 1 : 0, boardFocus ? 1 : 0);
 #endif
 		if (!focusAvailable) boardFocus = false;
+		if (focusAvailable && !boardFocus) {
+			GUI.enabled=true;
+			if(GUI.Button(new Rect(Mathf.Max(8,Screen.width-168),4,160,60),"Toggle Zoom",new GUIStyle(GUI.skin.button){fontSize=18}))ToggleBoardFocus();
+		}
 		if (boardFocus) { DrawBoardFocus(profileMatch); return; }
+		float topInset = focusAvailable ? 68 : 0;
+		float scale = Mathf.Min(Screen.width / 1200f, (Screen.height-topInset) / 900f);
+		GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1200f * scale) / 2f, topInset+(Screen.height-topInset-900f*scale)/2f,0),Quaternion.identity,new Vector3(scale,scale,1));
 		pointerWanted = false;
 		if (profileMatch?.id != openCommanderMatch || profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over" || (!teacherMode && state?.phase == "ended"))
 			commanderOpen = false;
@@ -1115,45 +1120,15 @@ public partial class HistoryGame : MonoBehaviour
 
 	void DrawTutorialTip()
 	{
-		if (!tipVisible)
-			return;
-		var style = new GUIStyle(GUI.skin.label)
-		{
-			fontSize = 25,
-			alignment = TextAnchor.MiddleCenter,
-			wordWrap = true
-		};
-		string message = BattleTips.Text(battleTips.Active);
-		float textHeight = style.CalcHeight(new GUIContent(message), 1020);
-		float height = Mathf.Max(154, textHeight + 90);
-		GUI.color = new Color(.025f, .045f, .065f, .97f);
-		GUI.DrawTexture(new Rect(60, 450 - height / 2, 1080, height), Texture2D.whiteTexture);
-		GUI.color = Color.white;
-		GUI.contentColor = accent;
-		GUI.Label(new Rect(90, 458 - height / 2, 1020, 28), "STRATEGY TIP", new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter });
-		GUI.contentColor = Color.white;
-		GUI.Label(new Rect(90, 490 - height / 2, 1020, textHeight), message, style);
-		GUI.Label(new Rect(90, 450 + height / 2 - 28, 1020, 22), "Click anywhere to dismiss | closes automatically", new GUIStyle(GUI.skin.label) { fontSize = 14, alignment = TextAnchor.MiddleCenter });
-		if (Event.current.type == EventType.Repaint)
-			paintedTip = tipKey + ":" + battleTips.Active;
+		if (!tipVisible) return;
+		DrawTopNotice("STRATEGY TIP", BattleTips.Text(battleTips.Active), "Click anywhere to dismiss | closes automatically");
+		if (Event.current.type == EventType.Repaint) paintedTip = tipKey + ":" + battleTips.Active;
 	}
 
 	void DrawTurnReminder()
 	{
-		if (!reminderVisible || tipVisible || Time.unscaledTime - turnNoticeStart < 2)
-			return;
-		var style = new GUIStyle(GUI.skin.label)
-		{
-			fontSize = 26,
-			alignment = TextAnchor.MiddleCenter,
-			wordWrap = true
-		};
-		string message = ReadableTiming.Reminder(reminderKey);
-		float height = Mathf.Max(110, style.CalcHeight(new GUIContent(message), 1020) + 32);
-		GUI.color = new Color(.025f, .045f, .065f, .96f);
-		GUI.DrawTexture(new Rect(60, 450 - height / 2, 1080, height), Texture2D.whiteTexture);
-		GUI.color = Color.white;
-		GUI.Label(new Rect(90, 466 - height / 2, 1020, height - 32), message, style);
+		if (!reminderVisible || tipVisible || Time.unscaledTime - turnNoticeStart < 2) return;
+		DrawTopNotice("YOUR TURN", ReadableTiming.Reminder(reminderKey), "");
 	}
 
 	void DrawPauseNotice()
@@ -1369,12 +1344,12 @@ public partial class HistoryGame : MonoBehaviour
 
 		var m = spectator.match;
 		DrawMatchHeader(m, spectator.phase);
-		GUI.Label(new Rect(245, 151, 220, 24), "Read-only | Fixed board");
-		int targetSide = m.side == 0 ? 1 : 0;
+		GUI.Label(new Rect(245, 151, 220, 24), "Read-only | " + SpectatorPerspectiveName(m.side));
+		string targetPerspective = NextSpectatorPerspective(m.side);
 		bool previousEnabled = GUI.enabled;
-		GUI.enabled = previousEnabled && !ActionBusy && (m.side == 0 || m.side == 1);
-		if (GUI.Button(new Rect(475, 150, 690, 24), "Switch to " + SideName(m, targetSide)))
-			Send("teacher/spectate", new Command { matchId = m.id, perspective = targetSide == 0 ? "red" : "blue" });
+		GUI.enabled = previousEnabled && !ActionBusy && m.side >= -1 && m.side <= 1;
+		if (GUI.Button(new Rect(475, 150, 690, 24), "Switch perspectives"))
+			Send("teacher/spectate", new Command { matchId = m.id, perspective = targetPerspective });
 		GUI.enabled = previousEnabled;
 		DrawBoard(m, false, true);
 		DrawSidebar(m, false);
@@ -1491,21 +1466,23 @@ public partial class HistoryGame : MonoBehaviour
 		if (boardFocus) { DrawFocusMessage(m, latest, name); return; }
 		float alpha = Mathf.Min(1, (presetUntil[latest.side] - Time.unscaledTime) / .35f);
 		GUI.color = new Color(.025f, .045f, .065f, .96f * alpha);
-		GUI.DrawTexture(new Rect(285, 18, 890, 128), Texture2D.whiteTexture);
+		var messageRect = TopMessageRect(true);
+		GUI.DrawTexture(messageRect, Texture2D.whiteTexture);
 		GUI.color = new Color(1, 1, 1, alpha);
 		var portrait = commander != null ? CommanderPortrait(commander.id) : null;
 		if (portrait != null)
-			GUI.DrawTexture(new Rect(300, 32, 108, 108), portrait, ScaleMode.ScaleToFit);
+			GUI.DrawTexture(new Rect(messageRect.x+12, messageRect.y+14, messageRect.width<600?72:108, messageRect.width<600?72:108), portrait, ScaleMode.ScaleToFit);
 		var nameStyle = new GUIStyle(GUI.skin.label)
 		{
-			fontSize = 25,
+			fontSize = messageRect.width<600?18:25,
 			fontStyle = FontStyle.Bold,
 			alignment = TextAnchor.MiddleLeft
 		};
 		GUI.contentColor = TurnColor(latest.side);
-		GUI.Label(new Rect(430, 27, 720, 42), HeaderName.Fit(name, 700, text => nameStyle.CalcSize(new GUIContent(text)).x), nameStyle);
+		float textX=messageRect.x+(messageRect.width<600?96:145), textWidth=messageRect.xMax-textX-14;
+		GUI.Label(new Rect(textX,messageRect.y+9,textWidth,42), HeaderName.Fit(name,textWidth,text=>nameStyle.CalcSize(new GUIContent(text)).x),nameStyle);
 		GUI.contentColor = Color.white;
-		GUI.Label(new Rect(430, 72, 720, 70), "\"" + latest.text + "\"", new GUIStyle(GUI.skin.label) { fontSize = 26, alignment = TextAnchor.MiddleLeft, wordWrap = true });
+		GUI.Label(new Rect(textX,messageRect.y+54,textWidth,70), "\"" + latest.text + "\"", new GUIStyle(GUI.skin.label) { fontSize = messageRect.width<600?20:26, alignment = TextAnchor.MiddleLeft, wordWrap = true });
 		GUI.color = Color.white;
 	}
 
@@ -1589,13 +1566,7 @@ public partial class HistoryGame : MonoBehaviour
 			detail += " Waiting for your opponent's formation.";
 		if (phase == "paused")
 			detail += " Your teacher has paused the session.";
-		GUI.color = new Color(.025f, .045f, .065f, .98f);
-		GUI.DrawTexture(new Rect(60, 345, 1080, 205), Texture2D.whiteTexture);
-		GUI.color = Color.white;
-		GUI.contentColor = accent;
-		GUI.Label(new Rect(90, 365, 1020, 95), title, new GUIStyle(GUI.skin.label) { fontSize = 29, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter, wordWrap = true });
-		GUI.contentColor = Color.white;
-		GUI.Label(new Rect(100, 467, 1000, 65), detail, new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.MiddleCenter, wordWrap = true });
+		DrawTopNotice("TIME'S UP", title + "\n" + detail, "");
 	}
 
 	bool NeedsIntro(MatchView m)
@@ -2144,7 +2115,7 @@ public partial class HistoryGame : MonoBehaviour
 	int boardRenderWidth => boardFocus ? 1000 : 1400;
 	int boardRenderHeight => boardFocus ? 1000 : 899;
 	TabletopBoard tabletop;
-	int shownSeq = -1;
+	int shownSeq = -1, presentationSide = -2;
 	float feedbackUntil, boostUntil;
 	bool[] Hints(MatchView m, PieceView[] b)
 	{
@@ -2192,6 +2163,10 @@ public partial class HistoryGame : MonoBehaviour
 	TabletopBoard battleStage;
 	void Track(MatchView m)
 	{
+		if (teacherMode && presentationSide != m.side) {
+			presentationSide=m.side; motions.Clear();
+			if(motion?.kind != "combat")motion=null;
+		}
 		if (presentationMatch != m.id)
 		{
 			presentationMatch = m.id;
