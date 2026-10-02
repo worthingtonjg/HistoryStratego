@@ -737,21 +737,8 @@ public class HistoryGame : MonoBehaviour
 		}
 
 		GUI.Box(new Rect(10, 10, 1180, 880), "");
-		var titleStyle = new GUIStyle(GUI.skin.label)
-		{
-			fontSize = 28,
-			fontStyle = FontStyle.Bold,
-			alignment = TextAnchor.MiddleCenter
-		};
-		DrawBrandLogo(new Rect(30, 13, 116, 58));
-		GUI.Label(new Rect(160, 14, 1010, 36), "CIVIL WAR: HIDDEN ORDERS", titleStyle);
-		GUI.contentColor = new Color(.85f, .73f, .48f);
-		var subtitleStyle = new GUIStyle(GUI.skin.label)
-		{
-			fontSize = 14,
-			alignment = TextAnchor.MiddleCenter
-		};
-		GUI.Label(new Rect(30, 47, 1140, 23), "Union vs Confederates", subtitleStyle);
+		bool compactMatchHeader = teacherMode ? watchId != "" && spectator?.match != null : StudentMatch() != null;
+		DrawBrandLogo(compactMatchHeader ? new Rect(535, 3, 130, 65) : new Rect(510, 10, 180, 90));
 		GUI.contentColor = Color.white;
 		if (state == null && !teacherMode && browserMode)
 		{
@@ -788,7 +775,7 @@ public class HistoryGame : MonoBehaviour
 			alignment = TextAnchor.MiddleCenter,
 			wordWrap = false
 		};
-		GUI.Label(new Rect(30, matchHeader ? 125 : 76, 1140, 22), new GUIContent(status != "" ? status : presence, presence), connectionStyle);
+		GUI.Label(!matchHeader ? new Rect(30, 76, 460, 22) : new Rect(30, 125, 1140, 22), new GUIContent(status != "" ? status : presence, presence), connectionStyle);
 		GUI.contentColor = Color.white;
 		if (profileMatch?.phase == "setup")
 		{
