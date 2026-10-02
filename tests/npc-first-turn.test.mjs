@@ -35,10 +35,12 @@ for (const side of [0, 1])
 					advance(ms);
 				}, emit: s => statuses.push(s.status)
 			});
-			for (const s of [0, 1])
+			for (const s of [0, 1]) {
 				call(s, 'setup/begin');
+				call(s, 'setup/next', {revision:0});call(s, 'setup/next', {revision:1});
+			}
 			call(1 - side, 'setup', {
-				revision: 0
+				revision: 2
 			});
 			assert.equal(opponentCanArm(call(side, 'state'), m.id), false);
 			if (timeout) {
@@ -55,7 +57,7 @@ for (const side of [0, 1])
 			}
 			else
 				call(side, 'setup', {
-					revision: 0
+					revision: 2
 				});
 			assert.equal(opponentCanArm(call(side, 'state'), m.id), true);
 			if (side === 1) {

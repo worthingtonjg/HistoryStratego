@@ -19,6 +19,7 @@ await writeFile(out + '/formation.mjs', await readFile('web/formation.mjs'));
 let s = await readFile('server/server.mjs', 'utf8');
 s = s.slice(0, s.indexOf('export function serve('));
 s = s.replace(/^import .* from 'node:.*';\r?\n/gm, '').replace(/^const ROOT = .*;\r?\n/m, '');
+s = s.replaceAll("'../web/formation.mjs'", "'./formation.mjs'");
 s = "import {randomBytes} from './random.mjs';\n" + s;
 s = s.replace('teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices:', `exportSnapshot: () => ({phase, order, pairedCount, presence, perspectives:[...perspectiveChoices], removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices:`);
 await writeFile(out + '/authority.mjs', s);

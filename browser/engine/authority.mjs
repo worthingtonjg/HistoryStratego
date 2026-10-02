@@ -1,4 +1,5 @@
 import {randomBytes} from './random.mjs';
+import { generateFormation } from './formation.mjs';
 import { sendPreset, presetView } from './emotes.mjs';
 import { armBattleContinue, tickBattleContinue, battleContinueView } from './battle-continue.mjs';
 import { initTurn, tickTurn, turnView, setupBlocked, checkTurnGate } from './turn-clock.mjs';
@@ -72,7 +73,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 	};
 	const roster = () => ({
 		classCode, phase, presence, roster: order.map((id, i) => ({
-			id, name: students.get(id).name, commander: students.get(id).commander || null, side: students.get(id).commander?.side, connected: seatAvailable(students.get(id), now()), pair: i < pairedCount ? Math.floor(i / 2) + 1 : 0, waiting: (phase === 'active' || phase === 'paused') ? ![...matches.values()].some(m => m.players.includes(id)) : !isPaired(students.get(id))
+			id, npc: students.get(id).npc === true, name: students.get(id).name, commander: students.get(id).commander || null, side: students.get(id).commander?.side, connected: seatAvailable(students.get(id), now()), pair: i < pairedCount ? Math.floor(i / 2) + 1 : 0, waiting: (phase === 'active' || phase === 'paused') ? ![...matches.values()].some(m => m.players.includes(id)) : !isPaired(students.get(id))
 		})), matches: [...matches.values()].map(m => ({
 			id: m.id, players: m.players, playerNames: m.playerNames, phase: m.phase, winner: m.winner, captures: captureTotals(m)
 		}))
@@ -147,7 +148,20 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			if (route.startsWith('teacher/')) {
 				teacher(token);
 				const action = route.slice(8);
-				if (action === 'randomize') {
+				if (action === 'npc') {
+                    const p=students.get(b.a);if(!p)throw Error('Student not found');p.npc=true;
+                }
+                else if (action === 'setup-npc') {
+                    const p=students.get(b.a),m=p&&find(p);
+                    if(!p?.npc||!m||m.id!==b.matchId||phase!=='active')throw Error('NPC setup is not enabled');
+                    const side=m.players.indexOf(p.id);
+                    if(!m.ready[side]) {
+                        const draft=generateFormation();
+                        if(m.setupClocks){const c=m.setupClocks[side];c.draft=draft;c.stage=3;c.started=true;c.deadline=null;c.remaining=0;c.revision++;}
+                        setup(m,side,draft);
+                    }
+                }
+                else if (action === 'randomize') {
 					if (phase !== 'waiting' && phase !== 'ended')
 						throw Error('End the round before changing pairs');
 					const pairing = pairRoster(order, students, shuffle, now());

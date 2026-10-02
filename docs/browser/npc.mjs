@@ -162,6 +162,7 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 	const joined = savedToken ? authority.call('state', {}, savedToken) : authority.call('join', {
 		classCode
 	}), token = savedToken || joined.token;
+	authority.call('teacher/npc',{a:joined.player},teacherKey);
 	let stopped = false, busy = false;
 	const state = () => authority.call('state', {}, token);
 	async function command(action, body = {}) {
@@ -188,14 +189,7 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 		try {
 			let s = state(), m = s.match;
 			if (s.phase === 'active' && m?.phase === 'setup' && !m.ready[m.side]) {
-				if (!m.setup.started)
-					authority.call('setup/begin', {
-						matchId: m.id
-					}, token);
-				m = state().match;
-				authority.call('setup', {
-					matchId: m.id, revision: m.setup.revision
-				}, token);
+				authority.call('teacher/setup-npc',{a:s.player,matchId:m.id},teacherKey);
 			}
 			await bot.tick();
 		}

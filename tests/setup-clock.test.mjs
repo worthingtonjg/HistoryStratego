@@ -57,10 +57,10 @@ test('deadline locks the last server-confirmed legal draft even disconnected; la
 	const f = fixture();
 	const draft = f.call(0, 'setup/begin').match.setup.draft;
 	const s = f.call(0, 'setup/swap', {
-		from: 0, to: 30, revision: 0
+		from: draft.indexOf('F'), to: 0, revision: 0
 	});
 	const expected = [...draft];
-	[expected[0], expected[30]] = [expected[30], expected[0]];
+	const flag=expected.indexOf('F');[expected[0], expected[flag]] = [expected[flag], expected[0]];
 	assert.deepEqual(s.match.setup.draft, expected);
 	assert.equal(s.match.setup.revision, 1);
 	assert.throws(() => f.call(0, 'setup/swap', {
@@ -75,7 +75,7 @@ test('deadline locks the last server-confirmed legal draft even disconnected; la
 	assert.equal(after.match.ready[0], true);
 	assert.equal(after.match.setup.automatic, true);
 	assert.equal(after.match.phase, 'setup');
-	assert.deepEqual(after.match.board.slice(60).map(p => p.rank), expected);
+	assert.equal(after.match.board[60].rank,'F');assert.equal(after.match.board.slice(60).filter(Boolean).length,40);
 	assert.throws(() => f.call(0, 'setup/swap', {
 		from: 0, to: 1, revision: 1
 	}), /locked/);
@@ -94,8 +94,9 @@ test('independent starts, early lock and simultaneous timeout enter play once', 
 	let s = f.call(1, 'state');
 	assert.deepEqual(s.match.ready, [true, false]);
 	assert.equal(s.match.setup.remainingMs, 20000);
+	f.call(1,'setup/next',{revision:0});f.call(1,'setup/next',{revision:1});
 	f.call(1, 'setup', {
-		revision: 0
+		revision: 2
 	});
 	s = f.call(1, 'state');
 	assert.equal(s.match.phase, 'play');

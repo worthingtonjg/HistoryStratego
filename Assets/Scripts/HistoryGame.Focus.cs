@@ -72,11 +72,11 @@ public partial class HistoryGame
             if(GUI.Button(new Rect(x,bottom,available,60),"Switch perspectives")) Send("teacher/spectate",new Command{matchId=m.id,perspective=NextSpectatorPerspective(m.side)});
         } else if(editing){
             float half=(available-8)/2;
-            if(GUI.Button(new Rect(x,bottom,half,60),"Shuffle")) {
+            if(SetupStage(m)==3 && GUI.Button(new Rect(x,bottom,half,60),"Shuffle pawns")) {
                 if(m.setup!=null)Send("setup/shuffle",new Command{matchId=m.id,revision=m.setup.revision});
                 else {formation=ArmyFormation.Generate();selected=-1;}
             }
-            if(GUI.Button(new Rect(x+half+8,bottom,half,60),"Start Game"))Send("setup",new Command{matchId=m.id,revision=m.setup?.revision??0,ranks=m.setup==null?formation:null});
+            if(GUI.Button(new Rect(SetupStage(m)<3?x:x+half+8,bottom,SetupStage(m)<3?available:half,60),SetupStage(m)<3?"Next":"Ready"))Send(SetupStage(m)<3?"setup/next":"setup",new Command{matchId=m.id,revision=m.setup?.revision??0,ranks=m.setup==null?formation:null});
         } else if(m.phase=="play"||m.battle?.kind=="combat") {
             double remaining=Math.Max(0,m.emoteCooldownMs-(Time.unscaledTime-setupReceivedAt)*1000);
             GUI.enabled=GUI.enabled&&remaining<=0;
@@ -84,9 +84,9 @@ public partial class HistoryGame
         }
         GUI.enabled=true;
         FocusBackground(new Rect(0,0,width,66));
-        string status=paused?"Paused by teacher":m.phase=="setup"?teacherMode?"Formation setup (read-only)":m.ready[m.side]?"Waiting for opponent formation":"Formation: "+Math.Ceiling(SetupRemaining(m)/1000)+"s":m.phase=="over"?"Match finished":(teacherMode?PlayerName(m,m.turn)+" to move":m.turn==m.side?"Your turn":PlayerName(m,m.turn)+" to move")+(m.turnClock?.enabled==true?" | "+Math.Ceiling(m.turnClock.remainingMs/1000)+"s":"");
+        string status=paused?"Paused by teacher":m.phase=="setup"?teacherMode?"Formation setup (read-only)":m.ready[m.side]?"Waiting for opponent formation":"Step "+SetupStage(m)+" / 3 | "+SetupTime(m):m.phase=="over"?"Match finished":(teacherMode?PlayerName(m,m.turn)+" to move":m.turn==m.side?"Your turn":PlayerName(m,m.turn)+" to move")+(m.turnClock?.enabled==true?" | "+Math.Ceiling(m.turnClock.remainingMs/1000)+"s":"");
         GUI.Label(new Rect(8,3,width-16,30),status,FocusStyle(21));
-        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SpectatorPerspectiveName(m.side):editing?"Tap two pieces to swap":error!=""?error:SideName(m,m.side),FocusStyle(16));
+        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SpectatorPerspectiveName(m.side):editing?(SetupStage(m)==1?"Place Flag: tap it, then a square. Next when ready.":SetupStage(m)==2?"Place Bombs: move any placed piece. Then Next.":"Arrange all pawns. Ready locks your army."):error!=""?error:SideName(m,m.side),FocusStyle(16));
         FocusLegacy(()=>DrawBattle(m,teacherMode),true);
         if(m.phase=="over"&&m.battle?.kind!="combat")FocusLegacy(()=>DrawEndgame(m,teacherMode));
         if(paused){focusMessages=false;FocusNotice("Paused by teacher","Please wait. Your game resumes when your teacher is ready.");}

@@ -49,7 +49,7 @@ public class SetupView
 {
 	public bool enabled, started, automatic;
 	public double remainingMs, serverNow, deadline, noticeRemainingMs;
-	public int revision;
+	public int revision, stage;
 	public string[] draft;
 }
 
@@ -84,7 +84,7 @@ public class MatchView
 	public string[] playerNames;
 	public Commander[] commanders;
 	public int side, turn, seq, winner;
-	public bool[] ready;
+	public bool[] ready, npc;
 	public PieceView[] board;
 	public Dispatch[] events;
 	public SelectionView selection;
@@ -127,7 +127,7 @@ public class RosterEntry
 	public string id, name;
 	public Commander commander;
 	public int pair, side;
-	public bool waiting, paired, connected;
+	public bool waiting, paired, connected, npc;
 }
 
 [Serializable]
@@ -775,7 +775,7 @@ public partial class HistoryGame : MonoBehaviour
 			name = name.Substring(0, cut) + "...";
 		}
 
-		return name;
+		return name + (teacherMode && m.npc!=null && side<m.npc.Length && m.npc[side]?" (NPC)":"");
 	}
 
 	string SideName(MatchView m, int side)
@@ -978,7 +978,8 @@ public partial class HistoryGame : MonoBehaviour
 			var nameRect = new Rect(xx + 46, matchHeaderY, ww - 46, 42);
 			var commander = m.commanders != null && side < m.commanders.Length ? m.commanders[side] : null;
 			string fullName = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : m.playerNames != null && side < m.playerNames.Length && !string.IsNullOrEmpty(m.playerNames[side]) ? m.playerNames[side] : "Player";
-			string visibleName = HeaderName.Fit(fullName, nameRect.width, text => style.CalcSize(new GUIContent(text)).x);
+			string npcSuffix=teacherMode && m.npc!=null && side<m.npc.Length && m.npc[side]?" (NPC)":"";
+			string visibleName = HeaderName.Fit(fullName, nameRect.width-style.CalcSize(new GUIContent(npcSuffix)).x, text => style.CalcSize(new GUIContent(text)).x)+npcSuffix;
 			float visibleWidth = style.CalcSize(new GUIContent(visibleName)).x;
 			var portrait = commander != null ? CommanderPortrait(commander.id) : null;
 			if (portrait != null)
@@ -1227,7 +1228,7 @@ public partial class HistoryGame : MonoBehaviour
 		GUI.EndScrollView();
 	}
 
-	static string TeacherFullName(RosterEntry player) => !string.IsNullOrEmpty(player.commander?.fullName) ? player.commander.fullName : player.name;
+	static string TeacherFullName(RosterEntry player) => !string.IsNullOrEmpty(player.commander?.fullName) ? (player.commander.fullName + (player.npc?" (NPC)":"")) : player.name + (player.npc?" (NPC)":"");
 	void TeacherCard(Rect rect,Color color,bool selected=false) {
 		GUI.color=selected?accent:new Color(.26f,.32f,.35f);GUI.DrawTexture(rect,Texture2D.whiteTexture);
 		GUI.color=color;GUI.DrawTexture(new Rect(rect.x+2,rect.y+2,rect.width-4,rect.height-4),Texture2D.whiteTexture);GUI.color=Color.white;
@@ -1387,7 +1388,7 @@ public partial class HistoryGame : MonoBehaviour
 		}
 
 		bool editing = m.phase == "setup" && !m.ready[m.side] && state.phase == "active" && (m.setup == null || SetupRemaining(m) > 0);
-		string hint = state.phase != "active" ? "Teacher has " + state.phase + " this round." : editing ? "Swap your pieces, then click Start Game below." : m.setupBlocked ? "Waiting for the setup notice to finish." : m.phase == "setup" ? "Waiting for opponent formation." : m.blocked || m.battle?.kind == "combat" ? "Combat reveal - waiting for both acknowledgments." : m.phase == "over" ? (m.winner == m.side ? "Victory!" : "Opponent wins.") : "";
+		string hint = state.phase != "active" ? "Teacher has " + state.phase + " this round." : editing ? SetupInstructions(m) : m.setupBlocked ? "Waiting for the setup notice to finish." : m.phase == "setup" ? "Waiting for opponent formation." : m.blocked || m.battle?.kind == "combat" ? "Combat reveal - waiting for both acknowledgments." : m.phase == "over" ? (m.winner == m.side ? "Victory!" : "Opponent wins.") : "";
 		if (hint == "" && m.turnClock?.enabled == true && m.phase == "play")
 			hint = m.turnClock.noticeRemainingMs > 0 ? "Automatic move pending." : (m.turn == m.side ? "Your turn" : PlayerName(m, m.turn) + " to move") + " | " + Math.Ceiling(m.turnClock.remainingMs / 1000) + " seconds";
 		GUI.Label(new Rect(30, 151, 1130, 24), hint);
@@ -1600,6 +1601,10 @@ public partial class HistoryGame : MonoBehaviour
 			GUI.Label(new Rect(250, 830, 700, 35), "Your teacher has paused the session. Please wait.");
 	}
 
+	int SetupStage(MatchView m) => m.setup?.stage > 0 ? m.setup.stage : 3;
+	string SetupTime(MatchView m) { int seconds=(int)Math.Ceiling(Math.Max(0,SetupRemaining(m))/1000);return (seconds/60)+":"+(seconds%60).ToString("00"); }
+	string SetupTitle(MatchView m) => SetupStage(m)==1?"1 / 3 - PLACE FLAG":SetupStage(m)==2?"2 / 3 - PLACE BOMBS":"3 / 3 - PLACE REMAINING PAWNS";
+	string SetupInstructions(MatchView m) => SetupStage(m)==1?"Choose your Flag, then a square in your four setup rows to move it. Click Next when ready.":SetupStage(m)==2?"Arrange your Bombs and Flag: choose a piece, then an empty square or another piece. Click Next.":"Arrange any pieces by choosing two squares. Earlier Flag and Bomb choices remain yours. Click Ready to lock your army.";
 	void DrawSetupPanel(MatchView m)
 	{
 		Panel(new Rect(25, 747, 1150, 138));
@@ -1610,17 +1615,17 @@ public partial class HistoryGame : MonoBehaviour
 		}
 
 		bool locked = m.ready[m.side];
-		string heading = locked ? "FORMATION LOCKED - waiting for your opponent" : state.phase == "paused" ? "FORMATION SETUP - timer paused by teacher" : m.setup != null ? "FORMATION SETUP - " + Math.Ceiling(SetupRemaining(m) / 1000) + " seconds remaining" : "FORMATION SETUP";
+		string heading = locked ? "FORMATION LOCKED - waiting for your opponent" : state.phase == "paused" ? "FORMATION SETUP - timer paused by teacher" : m.setup != null ? SetupTitle(m) + " | " + SetupTime(m) + " remaining" : "FORMATION SETUP";
 		GUI.contentColor = accent;
 		GUI.Label(new Rect(45, 757, 1080, 30), heading, new GUIStyle(GUI.skin.label) { fontSize = 23, fontStyle = FontStyle.Bold });
 		GUI.contentColor = Color.white;
-		string instructions = locked ? "Your army is ready. Play begins when both formations are locked." : m.setup != null ? "You have up to 5 minutes to arrange your army. Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready." : "Use Shuffle to randomize, or click two of your pieces to swap them. Click Start Game when you're ready.";
+		string instructions = locked ? "Your army is ready. Play begins when both formations are locked." : SetupInstructions(m) + " One 5:00 timer covers all three phases. Time running out fills only empty squares.";
 		GUI.Label(new Rect(45, 795, 825, 70), instructions, new GUIStyle(GUI.skin.label) { fontSize = 19, wordWrap = true });
 		bool enabled = GUI.enabled;
 		GUI.enabled = enabled && !ActionBusy && !locked && state.phase == "active" && (m.setup == null || SetupRemaining(m) > 0);
-		if (GUI.Button(new Rect(930, 794, 225, 39), "Start Game"))
-			Send("setup", new Command { matchId = m.id, revision = m.setup?.revision ?? 0, ranks = m.setup == null ? formation : null });
-		if (GUI.Button(new Rect(930, 842, 225, 30), "Shuffle"))
+		if (GUI.Button(new Rect(930, 794, 225, 39), SetupStage(m)<3?"Next":"Ready"))
+			Send(SetupStage(m)<3?"setup/next":"setup", new Command { matchId = m.id, revision = m.setup?.revision ?? 0, ranks = m.setup == null ? formation : null });
+		if (SetupStage(m)==3 && GUI.Button(new Rect(930, 842, 225, 30), "Shuffle pawns"))
 		{
 			if (m.setup != null)
 				Send("setup/shuffle", new Command { matchId = m.id, revision = m.setup.revision });
@@ -2218,7 +2223,7 @@ public partial class HistoryGame : MonoBehaviour
 		var b = (PieceView[])m.board.Clone();
 		if (!readOnly && m.phase == "setup" && !m.ready[m.side])
 			for (int k = 0; k < 40; k++)
-				b[m.side == 0 ? 60 + k : 39 - k] = new PieceView
+				b[m.side == 0 ? 60 + k : 39 - k] = string.IsNullOrEmpty(swapping ? swapPreview.Before[k] : formation[k]) ? null : new PieceView
 				{
 					side = m.side,
 					rank = swapping ? swapPreview.Before[k] : formation[k]
@@ -2333,8 +2338,7 @@ public partial class HistoryGame : MonoBehaviour
 			int k = m.side == 0 ? i - 60 : 39 - i;
 			if (k < 0 || k >= 40)
 				return;
-			if (selected < 0)
-				selected = i;
+			if (selected < 0) { if (!string.IsNullOrEmpty(formation[k])) selected = i; }
 			else
 			{
 				int a = m.side == 0 ? selected - 60 : 39 - selected;

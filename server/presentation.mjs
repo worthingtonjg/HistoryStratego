@@ -28,7 +28,7 @@ export function installPresentation(authority) {
 			if (side === -1) { snapshot.selection = null; snapshot.selectionOptions = []; snapshot.events = snapshot.events.map(e => ({...e, targets:[]})); }
 			return {
 				...result, perspectiveName: side === -1 ? 'Neutral' : names(m)[side], match: {
-					...snapshot, ...authority.clockView?.(m), playerNames: names(m), commanders: m.commanders || []
+					...snapshot, ...authority.clockView?.(m), npc: m.players.map(id=>authority.students.get(id)?.npc===true), playerNames: names(m), commanders: m.commanders || []
 				}
 			};
 		}
