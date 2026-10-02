@@ -20,7 +20,7 @@ let s = await readFile('server/server.mjs', 'utf8');
 s = s.slice(0, s.indexOf('export function serve('));
 s = s.replace(/^import .* from 'node:.*';\r?\n/gm, '').replace(/^const ROOT = .*;\r?\n/m, '');
 s = "import {randomBytes} from './random.mjs';\n" + s;
-s = s.replace('teacherKey, classCode, students, matches, __perspectiveChoices:', `exportSnapshot: () => ({phase, order, pairedCount, presence, emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, __perspectiveChoices:`);
+s = s.replace('teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices:', `exportSnapshot: () => ({phase, order, pairedCount, presence, removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices:`);
 await writeFile(out + '/authority.mjs', s);
 await writeFile(out + '/random.mjs', `export const randomUUID=()=>crypto.randomUUID();
 export function randomBytes(n){const a=crypto.getRandomValues(new Uint8Array(n));return {toString:()=>Array.from(a,x=>x.toString(16).padStart(2,'0')).join('')};}

@@ -30,7 +30,7 @@ test('commander client joins without a name and uses frozen match profiles', () 
 	assert.ok(source.includes('player.name'));
 });
 test('commander overlay cannot pick the board and yields to mandatory combat and results', () => {
-	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen && !studentPaused;'));
+	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen && !studentPaused && removeCandidate == "";'));
 	assert.ok(containsCode(source, 'if (!commanderOpen && !readOnly && !EndgamePresentation.Terminal'));
 	assert.ok(containsCode(source, 'profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over"'));
 	assert.ok(containsCode(source, 'combatDismissUntil = Time.unscaledTime + .65f;'));

@@ -27,7 +27,7 @@ window.fetch = async (input, options = {}) => {
 			if (!runtime)
 				throw Error('Connect to a classroom first');
 			const body = options.body ?? (input instanceof Request ? await input.clone().text() : '{}'), text = typeof body === 'string' ? body : await new Response(body).text();
-			const headers = new Headers(options.headers || {}), token = (headers.get('Authorization') || '').replace(/^Bearer /, '');
+			const headers = new Headers(options.headers || (input instanceof Request ? input.headers : {})), token = (headers.get('Authorization') || '').replace(/^Bearer /, '');
 			const value = await runtime.request(url.pathname.slice(5), JSON.parse(text), token);
 			if (value.classCode)
 				value.classCode = runtime.joinCode;

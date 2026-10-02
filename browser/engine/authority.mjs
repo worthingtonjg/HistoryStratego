@@ -11,6 +11,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		gameId: 'zN6Oyc9pDGlt60CITwGe', roomCode: randomBytes(2).toString('hex').toUpperCase(), sessionId: randomBytes(16).toString('hex')
 	};
 	const students = new Map(), tokens = new Map(), matches = new Map(), archives = new Map();
+	const removedStudents = new Map(snapshot?.removedStudents || []), revokedTokens = new Set(snapshot?.revokedTokens || []);
 	const emoteRecords = new Map(snapshot?.emotes || []);
 	let order = [], phase = 'waiting', pairedCount = snapshot?.pairedCount ?? (snapshot?.matches?.length || 0) * 2;
 	if (snapshot) {
@@ -86,8 +87,12 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		tick, clockView: m => ({
 			setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), ...presetView(emoteRecords, m, -1, now())
 		}),
-		exportSnapshot: () => ({phase, order, pairedCount, presence, emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, __perspectiveChoices: new Map(snapshot?.perspectives || []),
+		exportSnapshot: () => ({phase, order, pairedCount, presence, removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices: new Map(snapshot?.perspectives || []),
 		call(route, b = {}, token = '') {
+			if (revokedTokens.has(token)) {
+				if (route === 'state' || route === 'join') return {classCode, phase:'removed', removed:true, match:null, paired:false};
+				throw Error('You were removed from this classroom by your teacher.');
+			}
 			if (route === 'emote') {
 				const p = auth(token), m = find(p);
 				if (!m || b.matchId !== m.id || phase !== 'active' || (m.phase !== 'play' && !m.reveal && !m.events.some(e => e.kind === 'combat' && e.ack?.some(ack => !ack))) || setupBlocked(m) || m.turnClock?.notice)
@@ -103,6 +108,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 					return {
 						token, ...state(auth(token))
 					};
+				if (token) throw Error('Saved student seat is not valid for this classroom. Ask your teacher before joining again.');
 				if (students.size >= 40)
 					throw Error('Classroom is full');
 				const commander = assignCommander(students, commanderPool, now()), name = commander.name;
@@ -179,6 +185,24 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 					emoteRecords.clear();
 					for (let i = 0; i + 1 < pairedCount; i += 2) addMatch([order[i], order[i + 1]]);
 					phase = 'active';
+				}
+				else if (action === 'remove') {
+					if (removedStudents.has(b.a)) return roster();
+					const p = students.get(b.a);
+					if (!p) throw Error('Student is no longer in this classroom.');
+					const m = find(p), index = order.indexOf(p.id);
+					const partner = index >= 0 && index < pairedCount ? order[index ^ 1] : null;
+					if (m) {
+						pauseSetup(m, now()); m.setupCancelled = true; m.roundEnded = true; m.archived = true; m.removedPlayer = p.id;
+						archives.set(m.id, m); matches.delete(m.id); emoteRecords.delete(m.id);
+					}
+					const paired = order.slice(0, pairedCount).filter(id => id !== p.id && id !== partner);
+					const waiting = order.slice(pairedCount).filter(id => id !== p.id);
+					if (partner) waiting.push(partner);
+					order = [...paired, ...waiting]; pairedCount = paired.length;
+					removedStudents.set(p.id, {...p, removedAt:now()});
+					students.delete(p.id);
+					for (const [t, seat] of tokens) if (seat.id === p.id) { revokedTokens.add(t); tokens.delete(t); }
 				}
 				else if (action === 'pair') {
 					if (phase !== 'active' && phase !== 'paused') throw Error('Start the round before pairing late arrivals.');

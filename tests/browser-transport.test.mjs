@@ -351,3 +351,25 @@ test('encrypted student transport delivers allowlisted messages and enforces coo
 		teacher.close();
 	}
 });
+function tabStorage(){const values=new Map();return{values,getItem:k=>values.get(k)||null,setItem:(k,v)=>values.set(k,v),removeItem:k=>values.delete(k)};}
+test('student refresh restores one waiting/active seat across concurrent joins, lost token, and teacher recovery',async()=>{
+ const env=environment(),storage=tabStorage(),access=acceptUnityTeacherGate();let teacher=await connectClassroom({role:'teacher',teacherAccess:access,sdk:env.sdk('refresh-owner')});let student,other;
+ try{
+ student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('first-page'),studentStorage:storage});
+ const seats=await Promise.all(Array.from({length:3},()=>student.request('join',{classCode:teacher.code})));assert(seats.every(s=>s.player===seats[0].player));assert.equal(teacher.authority.students.size,1);
+ const original=seats[0],key='history.student.'+teacher.code;assert.equal(JSON.parse(storage.getItem(key)).token,original.token);
+ student.close();let saved=JSON.parse(storage.getItem(key));saved.token='';storage.setItem(key,JSON.stringify(saved));storage.removeItem('studentToken'); // Lost initial response/Unity token: retained key must still recover allocation.
+ student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('reload-waiting'),studentStorage:storage});const restored=await student.request('join',{classCode:teacher.code});assert.equal(restored.player,original.player);assert.deepEqual(restored.commander,original.commander);assert.equal(teacher.authority.students.size,1);
+ other=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('distinct-student'),studentStorage:tabStorage()});const distinct=await other.request('join',{classCode:teacher.code});assert.notEqual(distinct.player,original.player);await teacher.request('teacher/start');const match=(await student.request('state')).match.id;
+ student.close();student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('reload-active'),studentStorage:storage});assert.equal((await student.request('join',{classCode:teacher.code})).match.id,match);assert.equal(teacher.authority.students.size,2);
+ const code=teacher.code,recovery=teacher.recovery;teacher.close();await new Promise(r=>setTimeout(r,20));teacher=await connectClassroom({role:'recover',code,recovery,teacherAccess:access,sdk:env.sdk('recovered-owner')});student.close();student=await connectClassroom({role:'student',code,sdk:env.sdk('after-recovery'),studentStorage:storage});assert.equal((await student.request('join',{classCode:code})).player,original.player);assert.equal(teacher.authority.students.size,2);
+ const invalid=await student.request('join',{classCode:code},'invalid-seat');assert.match(invalid.error,/not valid/);assert.equal(teacher.authority.students.size,2);
+ await teacher.retire();assert.equal((await student.request('state')).classRetired,true);await assert.rejects(connectClassroom({role:'student',code,sdk:env.sdk('retired-reload'),studentStorage:storage}),/Class ended/);assert.equal(teacher.authority.students.size,2);
+ }finally{student?.close();other?.close();teacher?.close();}
+});
+test('teacher removal revokes transport identity across reload and recovery and stops owned computer',async()=>{
+ const env=environment(),storage=tabStorage(),access=acceptUnityTeacherGate();let teacher=await connectClassroom({role:'teacher',teacherAccess:access,sdk:env.sdk('remove-owner')});let student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('remove-seat'),studentStorage:storage});
+ try{const seat=await student.request('join',{classCode:teacher.code});await teacher.request('teacher/remove',{a:seat.player});assert.equal((await student.request('state')).removed,true);student.close();student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('removed-refresh'),studentStorage:storage});assert.equal((await student.request('join',{classCode:teacher.code})).removed,true);assert.equal(teacher.authority.students.size,0);
+ await teacher.addComputer();const bot=[...teacher.authority.students.values()][0];await teacher.request('teacher/remove',{a:bot.id});assert.equal(teacher.authority.students.size,0);const code=teacher.code,recovery=teacher.recovery;teacher.close();await new Promise(r=>setTimeout(r,20));teacher=await connectClassroom({role:'recover',code,recovery,teacherAccess:access,sdk:env.sdk('remove-recover')});assert.equal(teacher.authority.students.size,0);assert.equal((await student.request('state')).removed,true);
+ }finally{student.close();teacher.close();}
+});

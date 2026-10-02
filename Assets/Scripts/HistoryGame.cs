@@ -218,7 +218,7 @@ public class HistoryGame : MonoBehaviour
 	StudentView state;
 	TeacherView teacher;
 	SpectatorView spectator;
-	string watchId = "";
+	string watchId = "", removeCandidate = "", removalMessage = "";
 	Vector2 matchScroll;
 	bool busy, teacherMode, commanderOpen;
 	class UiAction
@@ -825,7 +825,7 @@ public class HistoryGame : MonoBehaviour
 				HandleCombatInput();
 		}
 
-		GUI.enabled = !commanderOpen && !studentPaused;
+		GUI.enabled = !commanderOpen && !studentPaused && removeCandidate == "";
 		GUI.skin.label.fontSize = 16;
 		GUI.skin.label.wordWrap = true;
 		GUI.skin.label.richText = false;
@@ -923,6 +923,15 @@ public class HistoryGame : MonoBehaviour
 		if (commanderOpen)
 			DrawCommanderPanel(openCommander);
 		if (studentPaused) DrawPauseNotice();
+		if (removeCandidate != "") {
+			GUI.color = new Color(.02f,.04f,.06f,1); GUI.DrawTexture(new Rect(200,280,800,290),Texture2D.whiteTexture); GUI.color=Color.white;
+			GUI.Label(new Rect(225,305,750,145),removalMessage,new GUIStyle(GUI.skin.label){fontSize=23,wordWrap=true});
+			GUI.enabled = !ActionBusy;
+			if (GUI.Button(new Rect(240,490,310,48),"Cancel")) removeCandidate="";
+			if (GUI.Button(new Rect(650,490,310,48),"Remove player")) { var id=removeCandidate;removeCandidate="";swap="";Send("teacher/remove",new Command{a=id}); }
+			GUI.enabled=true;
+		}
+
 #if UNITY_WEBGL && !UNITY_EDITOR
 		HS_SetPointer(pointerWanted ? 1 : 0);
 #endif
@@ -1262,8 +1271,16 @@ public class HistoryGame : MonoBehaviour
 		Color background = GUI.backgroundColor;
 		if (swap == player.id)
 			GUI.backgroundColor = new Color(1f, .82f, .36f);
-		bool clicked = Button(x, y, width, (swap == player.id ? "SELECTED | " : "") + player.name + (player.side == 1 ? " | Union" : " | Confederate") + (!player.connected ? " | Offline" : ""));
+		bool clicked = Button(x, y, width - 110, (swap == player.id ? "SELECTED | " : "") + player.name + (player.side == 1 ? " | Union" : " | Confederate") + (!player.connected ? " | Offline" : ""));
 		GUI.backgroundColor = background;
+		GUI.enabled = enabled && !ActionBusy;
+		if (Button(x + width - 102, y, 102, "Remove")) {
+			removeCandidate=player.id;
+			var game = Array.Find(teacher.matches ?? Array.Empty<MatchSummary>(), candidate => Array.IndexOf(candidate.players, player.id) >= 0);
+			string impact="Their classroom access will be revoked.";
+			if(game!=null) { int other=game.players[0]==player.id ? 1:0; impact="This ends only their current match. " + game.playerNames[other] + " returns to waiting. Other games continue."; }
+			removalMessage="Remove " + player.name + " from this classroom?\n\n" + impact;
+		}
 		GUI.enabled = enabled;
 		if (!clicked)
 			return;

@@ -1,0 +1,9 @@
+# Student reconnect and teacher removal
+
+Student transport now saves a tab-scoped ECDH identity bound to the full classroom identity before its first join, and persists the returned seat token before passing the response to Unity. Refresh can recover the original teacher-side allocation even if the initial token handoff was lost. Invalid nonempty seat tokens fail closed instead of allocating another commander. Closed transports no longer answer a recovered owner's requests; Request-object authorization headers are preserved. Separate student storage remains separate. No existing phantom seats are automatically deleted or merged.
+
+Each teacher roster seat has a separate Remove button and named confirmation. Removal revokes the seat and transport binding, archives only its current match, returns its opponent to waiting and preserves other matches and the classroom phase. Repeated removal is idempotent. Removed records and revocations survive teacher recovery; owned computer controllers are stopped. Removed students get a primary You were removed screen. This is session removal, not a permanent identity ban.
+
+Connection status wording is now Connected to host; authority rules are unchanged.
+
+Verified: 229 tests pass, including concurrent initial joins, waiting/active refresh, missing token handoff, separate students, teacher recovery, retired classroom denial, revoked-session refresh/recovery, NPC removal, teacher-only access and unaffected matches. Unity StudentAccessRelease built successfully. Actual Unity local fixture verified the named confirmation, Cancel with no mutation, and one confirmed removal with zero browser exceptions. Screenshot Logs/removal-confirmation.png inspected. No live Playroom identities or user classroom changes. Real classroom refresh/phone QA remains manual.

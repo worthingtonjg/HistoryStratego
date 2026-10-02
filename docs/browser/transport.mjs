@@ -53,7 +53,7 @@ const recoveryKey = code => crypto.subtle.importKey('raw', bytes(code), {
 	name: 'AES-GCM'
 }, false, ['encrypt', 'decrypt']);
 export async function connectClassroom({ role, code = '', recovery = '', sdk = null, onStatus = () => {
-}, allowHidden = false, teacherAccess = null } = {}) {
+}, allowHidden = false, teacherAccess = null, studentStorage = globalThis.sessionStorage } = {}) {
 	if (role === 'teacher' || role === 'recover')
 		requireTeacherAccess(teacherAccess);
 	if (code && isRetired(code.trim().toUpperCase()))
@@ -74,11 +74,13 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			throw Error('Class ended. This classroom was retired.');
 		role = 'teacher';
 	}
+	const removedPeers = new Set(saved?.removedPeers || []);
 	const peerTokens = new Map(saved?.peerTokens || []), botTokens = new Set(saved?.botTokens || []), bots = new Map();
 	let retired = false, closed = false, shortJoin = false, requestedRoom = "";
 	const teacher = role === 'teacher';
 	pair = await keyPair(saved);
-	const pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey));
+	let pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey)), studentRecord = null;
+	const saveStudent = () => { if (studentRecord && studentStorage) studentStorage.setItem('history.student.' + code, JSON.stringify(studentRecord)); };
 	if (teacher) {
 		room = saved?.room;
 		recovery ||= random();
@@ -147,6 +149,21 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		}
 		if (!owner)
 			throw Error('Teacher not found. Check the classroom code and ask the teacher to keep the classroom open.');
+		if (studentStorage) {
+			const record = studentStorage.getItem('history.student.' + code);
+			if (record) {
+				studentRecord = JSON.parse(record);
+				if (studentRecord.code !== code) throw Error('Saved classroom identity does not match.');
+				pair = await keyPair(studentRecord);
+				pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey));
+			} else {
+				let legacy = null;
+				try { legacy = JSON.parse(studentStorage.getItem('history.browserSession') || 'null'); } catch {}
+				studentRecord = {code, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), token: legacy?.role === 'student' && legacy.code === code ? studentStorage.getItem('studentToken') || '' : ''};
+			}
+			// Persist identity before the first join can allocate a seat, even if its response is lost.
+			saveStudent();
+		}
 		peerKeys.set(owner.pub, await shared(pair, owner.pub));
 	}
 	function pause() {
@@ -166,7 +183,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		savePromise = savePromise.catch(() => {
 		}).then(async () => {
 			const state = {
-				retired, botTokens: [...botTokens], room, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), teacherKey, clock, peerTokens: [...peerTokens], snapshot: authority.exportSnapshot()
+				retired, removedPeers:[...removedPeers], botTokens: [...botTokens], room, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), teacherKey, clock, peerTokens: [...peerTokens], snapshot: authority.exportSnapshot()
 			};
 			localStorage.setItem('history.teacher.' + code, JSON.stringify(await seal(await recoveryKey(recovery), state)));
 		});
@@ -185,7 +202,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	};
 	sdk.RPC.register('historyRequest', async (packet, sender) => {
 		debug.received++;
-		if (!teacher || packet?.to !== pub || typeof packet.pub !== 'string')
+		if (closed || !teacher || packet?.to !== pub || typeof packet.pub !== 'string')
 			return null;
 		queue = queue.then(async () => {
 			try {
@@ -215,13 +232,14 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 							throw Error('Teacher disconnected');
 						if (performance.now() - last > 2500 || (!allowHidden && document.hidden))
 							pause();
+						if (removedPeers.has(packet.pub)) throw Error('You were removed from this classroom by your teacher.');
 						result = authority.call(request.route, request.body, request.token || (request.route === 'join' ? peerTokens.get(packet.pub) : '') || '');
 						if (request.route === 'join' && result.token)
 							peerTokens.set(packet.pub, result.token);
 					}
 					catch (e) {
 						result = {
-							error: e.message
+							error: e.message, ...(removedPeers.has(packet.pub) ? {removed:true,phase:'removed',match:null,paired:false} : {})
 						};
 					}
 					reply = {
@@ -244,13 +262,18 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	});
 	sdk.RPC.register('historyResponse', async (packet) => {
 		debug.replied++;
-		if (teacher || packet?.to !== pub || packet.from !== owner.pub)
+		if (closed || teacher || packet?.to !== pub || packet.from !== owner.pub)
 			return null;
 		try {
 			const response = await open(await getKey(owner.pub), packet.body);
 			debug.opened++;
 			const p = pending.get(response.id);
 			if (p) {
+				if (studentRecord && response.result?.token && !response.result.error) {
+					studentRecord.token = response.result.token;
+					saveStudent();
+					studentStorage.setItem('studentToken', response.result.token);
+				}
 				clearTimeout(p.timer);
 				pending.delete(response.id);
 				p.resolve(response.result);
@@ -269,7 +292,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		};
 	}
 	sdk.RPC.register('historyClassEnded', async (packet) => {
-		if (teacher || packet?.to !== pub || packet.from !== owner.pub)
+		if (closed || teacher || packet?.to !== pub || packet.from !== owner.pub)
 			return;
 		try {
 			const message = await open(await getKey(owner.pub), packet.body);
@@ -290,9 +313,15 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			if (!live)
 				throw Error('Teacher disconnected');
 			const result = authority.call(route, body, route.startsWith('teacher/') ? teacherKey : token);
+			if (route === 'teacher/remove') {
+				responses.clear();
+				for (const [peer, seatToken] of peerTokens) if (authority.revokedTokens.has(seatToken)) { peerTokens.delete(peer); removedPeers.add(peer); }
+				for (const seatToken of botTokens) if (authority.revokedTokens.has(seatToken)) { bots.get(seatToken)?.stop(); bots.delete(seatToken); botTokens.delete(seatToken); }
+			}
 			await checkpoint();
 			return result;
 		}
+		token ||= studentRecord?.token || '';
 		const id = crypto.randomUUID(), bodyPacket = await seal(await getKey(owner.pub), {
 			id, room: code, route, body, token
 		});
@@ -347,7 +376,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		}
 	}
 	await checkpoint();
-	onStatus(teacher ? 'Teacher classroom ready' : 'Connected to teacher');
+	onStatus(teacher ? 'Teacher classroom ready' : 'Connected to host');
 	return {
 		role: teacher ? 'teacher' : 'student', code, joinCode: room, recovery, request, teacherKey, get authority() {
 			return authority;
