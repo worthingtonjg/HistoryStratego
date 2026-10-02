@@ -125,6 +125,7 @@ public class StudentView
 public class RosterEntry
 {
 	public string id, name;
+	public Commander commander;
 	public int pair, side;
 	public bool waiting, paired, connected;
 }
@@ -1197,66 +1198,67 @@ public partial class HistoryGame : MonoBehaviour
 		}
 
 		var layout = TeacherPairLayout.Build(teacher.roster);
-		float contentHeight = layout.pairs.Length * 140 + 55 + layout.waiting.Length * 42;
+		var union = Array.FindAll(layout.waiting, p => p.side == 1);
+		var confederate = Array.FindAll(layout.waiting, p => p.side == 0);
+		float contentHeight = layout.pairs.Length * 228 + 82 + Mathf.Max(union.Length,confederate.Length) * 154;
 		rosterScroll = GUI.BeginScrollView(new Rect(35, 195, 1130, 560), rosterScroll, new Rect(0, 0, 1095, Mathf.Max(560, contentHeight)));
 		float y = 0;
 		foreach (var pair in layout.pairs)
 		{
 			var match = TeacherPairLayout.MatchFor(pair, teacher.matches);
-			GUI.Box(new Rect(0, y, 1090, 128), "");
+			TeacherCard(new Rect(0,y,1090,212),new Color(.10f,.15f,.18f));
 			string status = match == null ? "Waiting for start" : teacher.phase == "ended" ? "Round ended" : (teacher.phase == "paused" ? "Paused | " : "") + (match.phase == "over" ? "Finished" : match.phase == "setup" ? "Setup" : "Playing");
-			GUI.Label(new Rect(15, y + 10, 720, 28), "Pair " + pair.number + " | " + status);
-			if (match != null)
-			{
-				if (Button(795, y + 8, 130, "Spectate"))
-				{
-					watchId = match.id;
-					spectator = null;
-					nextPoll = 0;
-				}
-
+			GUI.Label(new Rect(16,y+10,830,32),"PAIR " + pair.number + "  |  " + status,new GUIStyle(GUI.skin.label){fontSize=19,fontStyle=FontStyle.Bold});
+			if (match != null && Button(925,y+8,145,"Spectate")) { watchId=match.id;spectator=null;nextPoll=0; }
+			for (int i=0;i<pair.members.Length;i++) {
+				var player=pair.members[i];float x=14+(i%2)*535;
+				DrawTeacherSeat(player,x,y+49,522);
+				int side=match?.players!=null?Array.IndexOf(match.players,player.id):-1;
+				if(side>=0&&match.captures!=null&&side<match.captures.Length)
+					GUI.Label(new Rect(x+12,y+185,498,24),"Captured: "+match.captures[side]+" enemy pieces");
 			}
-
-			for (int i = 0; i < pair.members.Length; i++)
-			{
-				var player = pair.members[i];
-				float x = 15 + (i % 2) * 535;
-				DrawTeacherSeat(player, x, y + 52, 515);
-				int side = match?.players != null ? Array.IndexOf(match.players, player.id) : -1;
-				if (side >= 0 && match.captures != null && side < match.captures.Length)
-					GUI.Label(new Rect(x + 6, y + 92, 500, 26), "Captured: " + match.captures[side] + " enemy pieces");
-			}
-			y += 140;
+			y+=228;
 		}
-
-		GUI.Label(new Rect(10, y + 5, 1070, 28), "UNPAIRED / WAITING (" + layout.waiting.Length + ")");
-		y += 45;
-		foreach (var player in layout.waiting)
-		{
-			DrawTeacherSeat(player, 15, y, 1055);
-			y += 42;
-		}
+		GUI.Label(new Rect(4,y,1080,28),"UNPAIRED / WAITING",new GUIStyle(GUI.skin.label){fontSize=19,fontStyle=FontStyle.Bold});
+		y+=34;
+		DrawWaitingColumn(union,0,y,1);
+		DrawWaitingColumn(confederate,550,y,0);
 
 		GUI.EndScrollView();
+	}
+
+	static string TeacherFullName(RosterEntry player) => !string.IsNullOrEmpty(player.commander?.fullName) ? player.commander.fullName : player.name;
+	void TeacherCard(Rect rect,Color color,bool selected=false) {
+		GUI.color=selected?accent:new Color(.26f,.32f,.35f);GUI.DrawTexture(rect,Texture2D.whiteTexture);
+		GUI.color=color;GUI.DrawTexture(new Rect(rect.x+2,rect.y+2,rect.width-4,rect.height-4),Texture2D.whiteTexture);GUI.color=Color.white;
+	}
+	void DrawWaitingColumn(RosterEntry[] players,float x,float y,int side) {
+		GUI.contentColor=side==1?new Color(.45f,.73f,1):new Color(.94f,.66f,.60f);
+		GUI.Label(new Rect(x+12,y,516,30),(side==1?"UNION":"CONFEDERATE")+" ("+players.Length+")",new GUIStyle(GUI.skin.label){fontSize=20,fontStyle=FontStyle.Bold});GUI.contentColor=Color.white;
+		if(players.Length==0)GUI.Label(new Rect(x+12,y+40,516,40),"No players waiting.");
+		for(int i=0;i<players.Length;i++)DrawTeacherSeat(players[i],x,y+40+i*154,540);
 	}
 
 	void DrawTeacherSeat(RosterEntry player, float x, float y, float width)
 	{
 		bool enabled = GUI.enabled;
 		bool latePairing = teacher.phase == "active" || teacher.phase == "paused";
-		GUI.enabled = enabled && !ActionBusy && (latePairing ? player.waiting && player.connected : teacher.phase == "waiting" || teacher.phase == "ended");
-		Color background = GUI.backgroundColor;
-		if (swap == player.id)
-			GUI.backgroundColor = new Color(1f, .82f, .36f);
-		bool clicked = Button(x, y, width - 110, (swap == player.id ? "SELECTED | " : "") + player.name + (player.side == 1 ? " | Union" : " | Confederate") + (!player.connected ? " | Offline" : ""));
-		GUI.backgroundColor = background;
+		bool selectable = enabled && !ActionBusy && (latePairing ? player.waiting && player.connected : teacher.phase == "waiting" || teacher.phase == "ended");
+		bool selected=swap==player.id;
+		TeacherCard(new Rect(x,y,width,132),player.side==1?new Color(.07f,.14f,.20f):new Color(.18f,.12f,.12f),selected);
+		GUI.Label(new Rect(x+12,y+10,width-24,58),TeacherFullName(player),new GUIStyle(GUI.skin.label){fontSize=23,fontStyle=FontStyle.Bold,wordWrap=true,alignment=TextAnchor.UpperLeft});
+		GUI.contentColor=selected?accent:new Color(.77f,.82f,.85f);
+		GUI.Label(new Rect(x+12,y+70,width-24,24),(player.side==1?"UNION":"CONFEDERATE")+"  |  "+(!player.connected?"Offline":player.waiting?"Waiting":"Paired")+(selected?"  |  SELECTED":""));
+		GUI.contentColor=Color.white;
+		GUI.enabled=selectable;
+		bool clicked=Button(x+12,y+96,width-134,selected?"Selected - click to cancel":selectable?"Select player":"Assigned to match");
 		GUI.enabled = enabled && !ActionBusy;
-		if (Button(x + width - 102, y, 102, "Remove")) {
+		if (Button(x + width - 110, y+96, 98, "Remove")) {
 			removeCandidate=player.id;
 			var game = Array.Find(teacher.matches ?? Array.Empty<MatchSummary>(), candidate => Array.IndexOf(candidate.players, player.id) >= 0);
 			string impact="Their classroom access will be revoked.";
 			if(game!=null) { int other=game.players[0]==player.id ? 1:0; impact="This ends only their current match. " + game.playerNames[other] + " returns to waiting. Other games continue."; }
-			removalMessage="Remove " + player.name + " from this classroom?\n\n" + impact;
+			removalMessage="Remove " + TeacherFullName(player) + " from this classroom?\n\n" + impact;
 		}
 		GUI.enabled = enabled;
 		if (!clicked)
