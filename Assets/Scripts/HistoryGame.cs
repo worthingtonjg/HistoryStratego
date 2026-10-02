@@ -738,7 +738,7 @@ public class HistoryGame : MonoBehaviour
 
 		GUI.Box(new Rect(10, 10, 1180, 880), "");
 		bool compactMatchHeader = teacherMode ? watchId != "" && spectator?.match != null : StudentMatch() != null;
-		DrawBrandLogo(compactMatchHeader ? new Rect(535, 3, 130, 65) : new Rect(510, 10, 180, 90));
+		DrawBrandLogo(compactMatchHeader ? new Rect(30, 15, 210, 105) : new Rect(510, 10, 180, 90));
 		GUI.contentColor = Color.white;
 		if (state == null && !teacherMode && browserMode)
 		{
@@ -823,9 +823,9 @@ public class HistoryGame : MonoBehaviour
 		};
 		bool playing = phase == "active" && m.phase == "play" && !DeadlineBlocked(m) && !m.blocked && m.battle?.kind != "combat";
 		string left = PlayerName(m, 1), right = PlayerName(m, 0);
-		while (style.fontSize > 18 && style.CalcSize(new GUIContent(left)).x + style.CalcSize(new GUIContent(right)).x + 210 > 1140)
+		while (style.fontSize > 12 && style.CalcSize(new GUIContent(left)).x + style.CalcSize(new GUIContent(right)).x + 210 > 900)
 			style.fontSize--;
-		float gap = 70, w0 = style.CalcSize(new GUIContent(left)).x + 70, w1 = style.CalcSize(new GUIContent(right)).x + 70, x = (1200 - w0 - w1 - gap) / 2;
+		float gap = 70, w0 = style.CalcSize(new GUIContent(left)).x + 70, w1 = style.CalcSize(new GUIContent(right)).x + 70, x = 270 + (900 - w0 - w1 - gap) / 2;
 		for (int column = 0; column < 2; column++)
 		{
 			int side = 1 - column;
