@@ -1,4 +1,14 @@
 mergeInto(LibraryManager.library, {
+	HS_OpenMatchLog: function (matchId) {
+		if (window.historyOpenMatchLog)
+			window.historyOpenMatchLog(UTF8ToString(matchId));
+	},
+	HS_LoadTeacherGrant: function () {
+		return stringToNewUTF8(localStorage.getItem('history.teacher.unlocked') || '');
+	},
+	HS_SaveTeacherGrant: function (verifierId) {
+		localStorage.setItem('history.teacher.unlocked', UTF8ToString(verifierId));
+	},
 	HS_EntryRole: function () {
 		return document.body.dataset.entry === 'teacher' ? 1 : document.body.dataset.entry === 'student' ? 2 : 0;
 	},

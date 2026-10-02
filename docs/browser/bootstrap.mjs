@@ -1,3 +1,5 @@
+import { installMatchLog } from './match-log.mjs';
+import { installJoinPanel } from './join-panel.mjs';
 import { acceptUnityTeacherGate } from './teacher-access.mjs';
 import { currentClassroom, isRetired, rememberClassroom } from './classroom-memory.mjs';
 import { connectClassroom } from './transport.mjs';
@@ -129,6 +131,13 @@ async function unlockTeacher() {
 	}
 }
 if (teacherPage) {
+	const matchLog = installMatchLog({
+		dialog: document.querySelector('#match-log'), title: document.querySelector('#match-log-title'), list: document.querySelector('#match-log-events'), closeButton: document.querySelector('#close-match-log'), refreshButton: document.querySelector('#refresh-match-log'), request: (route, body) => runtime.request(route, body), document
+	});
+	window.historyOpenMatchLog = id => runtime?.role === 'teacher' ? matchLog.open(id) : undefined;
+	installJoinPanel({
+		button: document.querySelector('#show-join'), dialog: document.querySelector('#join-panel'), codeElement: document.querySelector('#projector-code'), urlElement: document.querySelector('#student-address'), closeButton: document.querySelector('#close-join'), getCode: () => runtime?.joinCode || ''
+	});
 	window.historyTeacherUnlocked = unlockTeacher;
 	document.querySelector('#create').onclick = () => {
 		if (teacherAccess)
@@ -145,7 +154,7 @@ if (teacherPage) {
 			sessionStorage.removeItem('history.browserSession');
 			sessionStorage.setItem('history.newClass', '1');
 			// Reinitializing Playroom in a clean page avoids reusing its previous room/session.
-			location.replace(new URL('teacher.html', location.href));
+			location.replace(new URL('../admin/', import.meta.url));
 		}
 		catch (e) {
 			starting = false;
@@ -154,10 +163,7 @@ if (teacherPage) {
 	};
 	panel.hidden = true;
 	document.querySelector('#game').hidden = false;
-	unity().then(async (instance) => {
-		await new Promise(r => setTimeout(r, 600));
-		instance.SendMessage('HistoryGame', 'OpenTeacherGate', '');
-	}).catch(e => {
+	unity().catch(e => {
 		panel.hidden = false;
 		setStatus(e.message);
 	});

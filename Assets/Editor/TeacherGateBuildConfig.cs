@@ -12,7 +12,7 @@ public sealed class TeacherGateBuildConfig : IDisposable
 	[Serializable]
 	class Verifier
 	{
-		public string salt, digest;
+		public string salt, digest, rememberId;
 	}
 
 	public static TeacherGateBuildConfig Prepare()
@@ -28,11 +28,13 @@ public sealed class TeacherGateBuildConfig : IDisposable
 		var bytes = new byte[32];
 		using (var rng = RandomNumberGenerator.Create())
 			rng.GetBytes(bytes);
-		string salt = Convert.ToBase64String(bytes), digest;
+		string salt = Convert.ToBase64String(bytes), digest, rememberId;
 		using (var sha = SHA256.Create())
 			digest = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes(salt + "\n" + key)));
+		using (var sha = SHA256.Create())
+			rememberId = Convert.ToBase64String(sha.ComputeHash(Encoding.UTF8.GetBytes("history-teacher-remember-v1\n" + key)));
 		Directory.CreateDirectory("Assets/Resources");
-		File.WriteAllText(AssetPath, JsonUtility.ToJson(new Verifier { salt = salt, digest = digest }));
+		File.WriteAllText(AssetPath, JsonUtility.ToJson(new Verifier { salt = salt, digest = digest, rememberId = rememberId }));
 		AssetDatabase.ImportAsset(AssetPath, ImportAssetOptions.ForceSynchronousImport);
 		return new TeacherGateBuildConfig();
 	}

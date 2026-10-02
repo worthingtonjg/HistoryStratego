@@ -9,7 +9,28 @@ public static class TeacherGateVerifier
 	[Serializable]
 	class Verifier
 	{
-		public string salt, digest;
+		public string salt, digest, rememberId;
+	}
+
+	public static string RememberedId()
+	{
+		var asset = Resources.Load<TextAsset>("TeacherGateBuild");
+		if (asset == null)
+			return "";
+		try
+		{
+			return JsonUtility.FromJson<Verifier>(asset.text).rememberId ?? "";
+		}
+		catch
+		{
+			return "";
+		}
+	}
+
+	public static bool AcceptsRemembered(string grant)
+	{
+		string current = RememberedId();
+		return current.Length > 0 && !string.IsNullOrEmpty(grant) && grant == current;
 	}
 
 	public static bool Accepts(string entered)

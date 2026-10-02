@@ -306,6 +306,12 @@ public class HistoryGame : MonoBehaviour
 	static extern void HS_TeacherUnlocked();
 	[DllImport("__Internal")]
 	static extern int HS_EntryRole();
+	[DllImport("__Internal")]
+	static extern string HS_LoadTeacherGrant();
+	[DllImport("__Internal")]
+	static extern void HS_SaveTeacherGrant(string verifierId);
+	[DllImport("__Internal")]
+	static extern void HS_OpenMatchLog(string matchId);
 #endif
 	public void OpenTeacherGate(string unused)
 	{
@@ -318,10 +324,52 @@ public class HistoryGame : MonoBehaviour
 
 	void DrawTeacherGate()
 	{
-		GUI.Label(new Rect(280, 180, 640, 45), "Teacher entry");
-		GUI.Label(new Rect(280, 230, 640, 45), "Enter your teacher key to open your classroom.");
-		teacherEntryKey = GUI.PasswordField(new Rect(280, 285, 640, 38), teacherEntryKey, '*', 200);
-		if (Button(280, 350, 300, "Open teacher desk"))
+		Color oldColor = GUI.color, oldBackground = GUI.backgroundColor, oldContent = GUI.contentColor;
+		GUI.color = new Color(.063f, .106f, .129f);
+		GUI.DrawTexture(new Rect(-2000, -2000, 6000, 6000), Texture2D.whiteTexture);
+		GUI.color = new Color(.12f, .19f, .23f);
+		GUI.DrawTexture(new Rect(240, 165, 720, 515), Texture2D.whiteTexture);
+		GUI.color = new Color(.89f, .78f, .45f);
+		GUI.DrawTexture(new Rect(240, 165, 720, 4), Texture2D.whiteTexture);
+		GUI.color = Color.white;
+		GUI.contentColor = new Color(.92f, .95f, .96f);
+		var heading = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 30,
+			fontStyle = FontStyle.Bold,
+			wordWrap = true
+		};
+		GUI.Label(new Rect(280, 210, 640, 52), "Civil War: Hidden Orders", heading);
+		var body = new GUIStyle(GUI.skin.label)
+		{
+			fontSize = 18,
+			wordWrap = true
+		};
+		GUI.Label(new Rect(280, 280, 640, 55), "Teacher access\nEnter your key to open your classroom.", body);
+		var field = new GUIStyle(GUI.skin.textField)
+		{
+			fontSize = 22,
+			padding = new RectOffset(14, 14, 12, 10)
+		};
+		field.normal.background = Texture2D.whiteTexture;
+		field.focused.background = Texture2D.whiteTexture;
+		field.normal.textColor = Color.white;
+		field.focused.textColor = Color.white;
+		GUI.backgroundColor = new Color(.137f, .212f, .251f);
+		teacherEntryKey = GUI.PasswordField(new Rect(280, 355, 640, 54), teacherEntryKey, '*', 200, field);
+		var submit = new GUIStyle(GUI.skin.button)
+		{
+			fontSize = 19,
+			fontStyle = FontStyle.Bold
+		};
+		submit.normal.background = Texture2D.whiteTexture;
+		submit.hover.background = Texture2D.whiteTexture;
+		submit.active.background = Texture2D.whiteTexture;
+		submit.normal.textColor = new Color(.063f, .13f, .18f);
+		submit.hover.textColor = submit.normal.textColor;
+		submit.active.textColor = submit.normal.textColor;
+		GUI.backgroundColor = new Color(.89f, .78f, .45f);
+		if (GUI.Button(new Rect(280, 435, 640, 52), "Open teacher desk", submit))
 		{
 			if (TeacherGateVerifier.Accepts(teacherEntryKey))
 			{
@@ -329,6 +377,7 @@ public class HistoryGame : MonoBehaviour
 				teacherGatePassed = true;
 				teacherGateOpen = false;
 #if UNITY_WEBGL && !UNITY_EDITOR
+				HS_SaveTeacherGrant(TeacherGateVerifier.RememberedId());
 				HS_TeacherUnlocked();
 #endif
 			}
@@ -336,7 +385,13 @@ public class HistoryGame : MonoBehaviour
 				teacherGateStatus = "That key was not accepted. Try again.";
 		}
 
-		GUI.Label(new Rect(280, 410, 640, 70), teacherGateStatus);
+		GUI.contentColor = new Color(1f, .83f, .48f);
+		GUI.Label(new Rect(280, 510, 640, 50), teacherGateStatus, body);
+		GUI.contentColor = new Color(.70f, .77f, .80f);
+		GUI.Label(new Rect(280, 600, 640, 45), "A successful unlock is remembered in this browser.", new GUIStyle(body) { fontSize = 15 });
+		GUI.color = oldColor;
+		GUI.backgroundColor = oldBackground;
+		GUI.contentColor = oldContent;
 	}
 
 	public void BrowserLogin(string json)
@@ -365,7 +420,8 @@ public class HistoryGame : MonoBehaviour
 #if UNITY_WEBGL && !UNITY_EDITOR
 		int entryRole = HS_EntryRole();
 		browserMode = entryRole != 0;
-		teacherGateOpen = entryRole == 1;
+		teacherGatePassed = entryRole == 1 && TeacherGateVerifier.AcceptsRemembered(HS_LoadTeacherGrant());
+		teacherGateOpen = entryRole == 1 && !teacherGatePassed;
 #endif
 		Application.runInBackground = true;
 		Application.targetFrameRate = 4;
@@ -379,6 +435,10 @@ public class HistoryGame : MonoBehaviour
 #endif
 		formation = ArmyFormation.Generate();
 		StartCoroutine(LoadFacts());
+#if UNITY_WEBGL && !UNITY_EDITOR
+		if (teacherGatePassed)
+			HS_TeacherUnlocked();
+#endif
 	}
 
 	IEnumerator LoadFacts()
@@ -661,6 +721,12 @@ public class HistoryGame : MonoBehaviour
 
 		GUI.skin.button.fontSize = 15;
 		GUI.skin.textField.fontSize = 16;
+		if (teacherGateOpen)
+		{
+			DrawTeacherGate();
+			return;
+		}
+
 		GUI.Box(new Rect(10, 10, 1180, 880), "");
 		var titleStyle = new GUIStyle(GUI.skin.label)
 		{
@@ -677,9 +743,7 @@ public class HistoryGame : MonoBehaviour
 		};
 		GUI.Label(new Rect(30, 47, 1140, 23), "Union vs Confederates", subtitleStyle);
 		GUI.contentColor = Color.white;
-		if (teacherGateOpen)
-			DrawTeacherGate();
-		else if (state == null && !teacherMode && browserMode)
+		if (state == null && !teacherMode && browserMode)
 		{
 			GUI.Label(new Rect(70, 170, 1060, 55), "Connecting to your classroom teacher through Playroom...");
 			GUI.Label(new Rect(70, 225, 1060, 60), "Keep the teacher classroom open. If the teacher disconnects, play waits safely.");
@@ -993,46 +1057,108 @@ public class HistoryGame : MonoBehaviour
 			"resume",
 			"end"
 		};
-		for (int i = 0; i < actions.Length; i++)
+		int side0 = 0, side1 = 0, visibleAction = 0;
+		foreach (var player in teacher.roster ?? Array.Empty<RosterEntry>())
+			if (player.connected)
+			{
+				if (player.side == 0)
+					side0++;
+				else if (player.side == 1)
+					side1++;
+			}
+
+		bool hasMatches = teacher.matches != null && teacher.matches.Length > 0;
+		foreach (string action in actions)
 		{
-			string a = actions[i];
-			if (Button(35 + i * 150, 145, 140, a.ToUpperInvariant()))
-				Send("teacher/" + a, new Command());
+			if (!TeacherActionPolicy.Visible(action, teacher.phase, side0, side1, hasMatches))
+				continue;
+			if (Button(35 + visibleAction * 150, 145, 140, action.ToUpperInvariant()))
+				Send("teacher/" + action, new Command());
+			visibleAction++;
 		}
 
-		rosterScroll = GUI.BeginScrollView(new Rect(35, 195, 520, 440), rosterScroll, new Rect(0, 0, 480, Mathf.Max(440, teacher.roster.Length * 40)));
-		for (int i = 0; i < teacher.roster.Length; i++)
+		var layout = TeacherPairLayout.Build(teacher.roster);
+		float contentHeight = layout.pairs.Length * 140 + 55 + layout.waiting.Length * 42;
+		rosterScroll = GUI.BeginScrollView(new Rect(35, 195, 1130, 560), rosterScroll, new Rect(0, 0, 1095, Mathf.Max(560, contentHeight)));
+		float y = 0;
+		foreach (var pair in layout.pairs)
 		{
-			var p = teacher.roster[i];
-			if (Button(5, i * 40, 465, (swap == p.id ? "SELECTED | " : "") + p.name + (p.side == 1 ? " | Union | " : " | Confederate | ") + (!p.connected ? "Offline - reconnect to pair" : p.waiting ? "Waiting" : ("Pair " + p.pair))))
+			var match = TeacherPairLayout.MatchFor(pair, teacher.matches);
+			GUI.Box(new Rect(0, y, 1090, 128), "");
+			string status = match == null ? "Waiting for start" : teacher.phase == "ended" ? "Round ended" : (teacher.phase == "paused" ? "Paused | " : "") + (match.phase == "over" ? "Finished" : match.phase == "setup" ? "Setup" : "Playing");
+			GUI.Label(new Rect(15, y + 10, 720, 28), "Pair " + pair.number + " | " + status);
+			if (match != null)
 			{
-				if (swap == "")
-					swap = p.id;
-				else
+				if (Button(795, y + 8, 130, "Spectate"))
 				{
-					Send("teacher/swap", new Command { a = swap, b = p.id });
-					swap = "";
+					watchId = match.id;
+					spectator = null;
+					nextPoll = 0;
+				}
+
+				if (Button(940, y + 8, 130, "View log"))
+				{
+#if UNITY_WEBGL && !UNITY_EDITOR
+					HS_OpenMatchLog(match.id);
+#endif
 				}
 			}
+
+			for (int i = 0; i < pair.members.Length; i++)
+				DrawTeacherSeat(pair.members[i], 15 + (i % 2) * 535, y + 52, 515);
+			y += 140;
 		}
 
-		GUI.EndScrollView();
-		GUI.Label(new Rect(575, 183, 560, 25), "MATCHES - choose a read-only spectator view");
-		var matches = teacher.matches ?? Array.Empty<MatchSummary>();
-		matchScroll = GUI.BeginScrollView(new Rect(575, 215, 565, 420), matchScroll, new Rect(0, 0, 525, Mathf.Max(420, matches.Length * 55)));
-		for (int i = 0; i < matches.Length; i++)
+		GUI.Label(new Rect(10, y + 5, 1070, 28), "UNPAIRED / WAITING (" + layout.waiting.Length + ")");
+		y += 45;
+		foreach (var player in layout.waiting)
 		{
-			var m = matches[i];
-			string a = m.playerNames != null && m.playerNames.Length > 0 ? m.playerNames[0] : "Player", b = m.playerNames != null && m.playerNames.Length > 1 ? m.playerNames[1] : "Player";
-			if (Button(5, i * 55, 510, "Spectate " + (i + 1) + ": " + a + " vs " + b))
-			{
-				watchId = m.id;
-				spectator = null;
-				nextPoll = 0;
-			}
+			DrawTeacherSeat(player, 15, y, 1055);
+			y += 42;
 		}
 
 		GUI.EndScrollView();
+	}
+
+	void DrawTeacherSeat(RosterEntry player, float x, float y, float width)
+	{
+		bool enabled = GUI.enabled;
+		GUI.enabled = enabled && (teacher.phase == "waiting" || teacher.phase == "ended");
+		Color background = GUI.backgroundColor;
+		if (swap == player.id)
+			GUI.backgroundColor = new Color(1f, .82f, .36f);
+		bool clicked = Button(x, y, width, (swap == player.id ? "SELECTED | " : "") + player.name + (player.side == 1 ? " | Union" : " | Confederate") + (!player.connected ? " | Offline" : ""));
+		GUI.backgroundColor = background;
+		GUI.enabled = enabled;
+		if (!clicked)
+			return;
+		if (swap == player.id)
+		{
+			swap = "";
+			return;
+		}
+
+		if (swap == "")
+		{
+			swap = player.id;
+			return;
+		}
+
+		var selectedPlayer = Array.Find(teacher.roster, p => p.id == swap);
+		if (selectedPlayer == null)
+		{
+			swap = player.id;
+			return;
+		}
+
+		if (selectedPlayer.side != player.side)
+		{
+			error = "Choose another player from the same faction to swap.";
+			return;
+		}
+
+		Send("teacher/swap", new Command { a = swap, b = player.id });
+		swap = "";
 	}
 
 	void DrawSpectator()

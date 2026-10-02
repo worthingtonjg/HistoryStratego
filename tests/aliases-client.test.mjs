@@ -14,9 +14,9 @@ test('commander client joins without a name and uses frozen match profiles', () 
 	assert.ok(source.includes("You'll play as "));
 	assert.ok(source.includes('HOW TO PLAY - read while you wait'));
 	assert.ok(!source.includes('state.nickname + " | "'));
-	assert.ok(source.includes('Offline - reconnect to pair'));
+	assert.ok(source.includes(' | Offline'));
 	assert.ok(source.includes('same faction to swap'));
-	assert.ok(containsCode(source, '(p.side == 1 ? " | Union | " : " | Confederate | ")'));
+	assert.ok(containsCode(source, '(player.side == 1 ? " | Union" : " | Confederate")'));
 	assert.ok(!source.includes('\u00e2\u20ac\u00a2'));
 	assert.ok(!source.includes('Waiting for commander assignment'));
 	assert.ok(containsCode(source, 'if (string.IsNullOrEmpty(state.commander?.id)) state.commander = null;'));
@@ -26,7 +26,8 @@ test('commander client joins without a name and uses frozen match profiles', () 
 	assert.ok(containsCode(source, 'heading.CalcHeight(new GUIContent(name), width)'));
 	assert.ok(containsCode(source, 'linkStyle.normal.textColor = linkColor;'));
 	assert.ok(containsCode(source, '(commander.side == 1 ? "Union" : "Confederate")'));
-	assert.ok(containsCode(source, 'm.playerNames[0] : "Player"'));
+	assert.ok(containsCode(source, 'TeacherPairLayout.MatchFor(pair, teacher.matches)'));
+ assert.ok(source.includes('player.name'));
 });
 test('commander overlay cannot pick the board and yields to mandatory combat and results', () => {
 	assert.ok(containsCode(source, 'GUI.enabled = !commanderOpen;'));
