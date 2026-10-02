@@ -4,7 +4,6 @@ Unity WebGL + Playroom classroom strategy game; no custom backend at runtime.
 
 - [Student entry](https://worthingtonjg.github.io/HistoryStratego/)
 - [Teacher entry](https://worthingtonjg.github.io/HistoryStratego/teacher.html)
-- [Teacher workflow and accepted trust model](development-docs/BROWSER_RELEASE.md)
 - [Focused manual checklist](development-docs/CLASSROOM_MANUAL_CHECKLIST.md)
 - [Verification](development-docs/BROWSER_VERIFICATION.md)
 
