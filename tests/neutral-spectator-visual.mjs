@@ -72,9 +72,9 @@ try {
 	await new Promise(r => setTimeout(r, 1800));
  const seq=m.seq;await click(870,215);await page.wait('window.historyBoardFocusAvailable===true');
  const spectate=()=>a.call('teacher/spectate',{matchId:m.id},'isolated-fixture-only').match;
- assert.equal(spectate().side,-1);assert(spectate().board.every(p=>!p||p.rank==='?'));await page.screenshot('Logs/neutral-normal.png');
+ assert.equal(spectate().side,-1);assert(spectate().board.every(p=>!p||p.rank==='?'));await new Promise(r=>setTimeout(r,800));await page.screenshot('Logs/neutral-normal.png');
  const tap=async(x,y)=>{await page.call('Input.dispatchMouseEvent',{type:'mousePressed',button:'left',clickCount:1,x,y});await new Promise(r=>setTimeout(r,100));await page.call('Input.dispatchMouseEvent',{type:'mouseReleased',button:'left',clickCount:1,x,y});};
- await tap(760,30);await page.wait('window.historyBoardFocusActive===true');await new Promise(r=>setTimeout(r,500));await page.screenshot('Logs/neutral-focused.png');
+ await click(1075,91);await page.wait('window.historyBoardFocusActive===true');await new Promise(r=>setTimeout(r,500));await page.screenshot('Logs/neutral-focused.png');
  for(const side of [1,0,-1]){await tap(500,350);await new Promise(r=>setTimeout(r,700));assert.equal(spectate().side,side);assert(spectate().board.every(p=>!p||(p.side===side?p.rank!=='?':p.rank==='?')));assert.equal(m.seq,seq);}
  await page.screenshot('Logs/neutral-cycle-return.png');await tap(70,350);await page.wait('window.historyBoardFocusActive===false');await page.screenshot('Logs/neutral-internal-toggle.png');
  const stable=m.seq===seq;m.board[60]={id:'qa-attacker',side:0,rank:'6'};m.board[50]={id:'qa-defender',side:1,rank:'4'};move(m,0,60,50,m.seq,'neutral-visual-combat');await new Promise(r=>setTimeout(r,3400));assert.equal(spectate().side,-1);assert.equal(spectate().battle.attacker,'6');assert(spectate().board.every(p=>!p||p.rank==='?'));assert.deepEqual(m.reveal.ack,[false,false]);await page.screenshot('Logs/neutral-public-combat.png');

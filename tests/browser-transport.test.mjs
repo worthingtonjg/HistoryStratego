@@ -3,13 +3,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { connectClassroom, seal, open } from '../browser/transport.mjs';
 function environment() {
-	const store = new Map();
+	const store = new Map(), listeners = new Set();
 	globalThis.localStorage = {
 		getItem: k => store.get(k) || null, setItem: (k, v) => store.set(k, v), removeItem: k => store.delete(k)
 	};
 	globalThis.document = {
-		hidden: false, addEventListener() {
-		}, removeEventListener() {
+		hidden: false, addEventListener(name,fn) { if(name==='visibilitychange')listeners.add(fn);
+		}, removeEventListener(name,fn) { listeners.delete(fn);
 		}
 	};
 	globalThis.location = {
@@ -50,7 +50,7 @@ function environment() {
 		return client;
 	};
 	return {
-		sdk, packets, store
+		sdk, packets, store, visibility(hidden) { document.hidden=hidden;for(const fn of listeners)fn(); }
 	};
 }
 test('browser authority encrypts student messages, retains redaction and rejects remote teacher control', async () => {
@@ -386,3 +386,21 @@ test('legacy token migrates only into its exact existing classroom and resumes t
  const {prepareStudentJoin}=await import('../browser/student-session.mjs'),env=environment(),storage=tabStorage();const teacher=await connectClassroom({role:'teacher',teacherAccess:acceptUnityTeacherGate(),sdk:env.sdk('legacy-owner')});let student;
  try{const old=await teacher.request('join',{classCode:teacher.code});storage.setItem('history.browserSession',JSON.stringify({role:'student',code:teacher.code}));storage.setItem('studentToken',old.token);prepareStudentJoin(storage,teacher.joinCode);student=await connectClassroom({role:'student',code:teacher.joinCode,sdk:env.sdk('legacy-seat'),studentStorage:storage});const restored=await student.request('join',{classCode:teacher.code});assert.equal(restored.player,old.player);assert.deepEqual(restored.commander,old.commander);assert.equal(teacher.authority.students.size,1);}finally{student?.close();teacher.close();}
 });
+
+ test('background visibility and delayed host timer do not pause; manual pause stays authoritative', async()=>{
+ const env=environment(),teacher=await connectClassroom({role:'teacher',teacherAccess:acceptUnityTeacherGate(),sdk:env.sdk('teacher')}),student=await connectClassroom({role:'student',code:teacher.code,sdk:env.sdk('student')});
+ try {
+ const seat=await student.request('join',{classCode:teacher.code});
+ teacher.authority.call('join',{classCode:teacher.code});
+ await teacher.request('teacher/start');
+ env.visibility(true);
+ await new Promise(r=>setTimeout(r,350));
+ assert.equal((await student.request('state',{},seat.token)).phase,'active');
+ const previous=performance.now;const offset=performance.now()+10000;
+ Object.defineProperty(performance,'now',{value:()=>offset,configurable:true});
+ try {assert.equal((await student.request('state',{},seat.token)).phase,'active');}finally{Object.defineProperty(performance,'now',{value:previous,configurable:true});}
+ await teacher.request('teacher/pause');env.visibility(false);
+ assert.equal((await student.request('state',{},seat.token)).phase,'paused');
+ env.visibility(true);assert.equal((await student.request('state',{},seat.token)).phase,'paused');
+ } finally {teacher.close();student.close();}
+ });

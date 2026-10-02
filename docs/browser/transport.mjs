@@ -54,7 +54,7 @@ const recoveryKey = code => crypto.subtle.importKey('raw', bytes(code), {
 	name: 'AES-GCM'
 }, false, ['encrypt', 'decrypt']);
 export async function connectClassroom({ role, code = '', recovery = '', sdk = null, onStatus = () => {
-}, allowHidden = false, teacherAccess = null, studentStorage = globalThis.sessionStorage } = {}) {
+}, teacherAccess = null, studentStorage = globalThis.sessionStorage } = {}) {
 	if (role === 'teacher' || role === 'recover')
 		requireTeacherAccess(teacherAccess);
 	if (code && isRetired(code.trim().toUpperCase()))
@@ -229,8 +229,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 							throw Error('Unsupported student action');
 						if (!live || closed)
 							throw Error('Teacher disconnected');
-						if (performance.now() - last > 2500 || (!allowHidden && document.hidden))
-							pause();
+						advanceClock();
 						if (removedPeers.has(packet.pub)) throw Error('You were removed from this classroom by your teacher.');
 						result = authority.call(request.route, request.body, request.token || (request.route === 'join' ? peerTokens.get(packet.pub) : '') || '');
 						if (request.route === 'join' && result.token)
@@ -311,6 +310,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		if (teacher) {
 			if (!live)
 				throw Error('Teacher disconnected');
+			advanceClock();
 			const result = authority.call(route, body, route.startsWith('teacher/') ? teacherKey : token);
 			if (route === 'teacher/remove') {
 				responses.clear();
@@ -337,16 +337,18 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			});
 		});
 	}
-	const visibility = () => {
-		if (document.hidden) {
-			pause();
-			checkpoint();
-		}
-	};
+	// Visibility changes are not teacher commands. Requests also advance the
+	// clock, so background timer throttling cannot freeze an otherwise live class.
+	function advanceClock() {
+		const current = performance.now(), delta = Math.max(0,current-last);
+		last = current;
+		if (teacher && live && !closed) clock += delta;
+	}
+	const visibility = () => { if (document.hidden) checkpoint(); };
 	document.addEventListener('visibilitychange', visibility);
 	const interval = setInterval(() => {
-		const current = performance.now(), delta = current - last;
-		last = current;
+		advanceClock();
+		const current = performance.now();
 		if (teacher) {
 			if (isRetired(code) && !retired) {
 				retired = true;
@@ -355,10 +357,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 					bot.stop();
 				bots.clear();
 			}
-			if (delta > 2500 || (!allowHidden && document.hidden) || !live)
-				pause();
-			else
-				clock += delta;
+			if (!live) pause();
 			authority.tick();
 			if (current - lastSave > 2000) {
 				lastSave = current;

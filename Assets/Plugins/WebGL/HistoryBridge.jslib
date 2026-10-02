@@ -9,7 +9,7 @@ mergeInto(LibraryManager.library, {
     var finger=null;
     var mouse=function(type,touch,down){canvas.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,clientX:touch.clientX,clientY:touch.clientY,button:0,buttons:down?1:0,detail:1,view:window}));};
     var touch=function(event){
-     if(!window.historyBoardFocusActive&&finger===null){var t=event.changedTouches[0],r=canvas.getBoundingClientRect();if(!window.historyBoardFocusAvailable||!t||(t.clientY-r.top)*canvas.height/r.height>68||(t.clientX-r.left)*canvas.width/r.width<canvas.width-168)return;}
+     if(!window.historyBoardFocusActive&&finger===null){var t=event.changedTouches[0],r=canvas.getBoundingClientRect();var scale=Math.min(r.width/1200,r.height/900),x=t?(t.clientX-r.left-(r.width-1200*scale)/2)/scale:0,y=t?(t.clientY-r.top-(r.height-900*scale)/2)/scale:0;if(!window.historyBoardFocusAvailable||!t||x<980||x>1170||y<70||y>112)return;}
      if(event.type==='touchstart'&&finger===null&&event.touches.length===1){finger=event.changedTouches[0].identifier;mouse('mousedown',event.changedTouches[0],true);}
      else if(finger!==null){
       var current=Array.from(event.changedTouches).find(function(t){return t.identifier===finger;});

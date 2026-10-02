@@ -809,14 +809,9 @@ public partial class HistoryGame : MonoBehaviour
 		HS_FocusState(focusAvailable ? 1 : 0, boardFocus ? 1 : 0);
 #endif
 		if (!focusAvailable) boardFocus = false;
-		if (focusAvailable && !boardFocus) {
-			GUI.enabled=true;
-			if(GUI.Button(new Rect(Mathf.Max(8,Screen.width-168),4,160,60),"Toggle Zoom",new GUIStyle(GUI.skin.button){fontSize=18}))ToggleBoardFocus();
-		}
 		if (boardFocus) { DrawBoardFocus(profileMatch); return; }
-		float topInset = focusAvailable ? 68 : 0;
-		float scale = Mathf.Min(Screen.width / 1200f, (Screen.height-topInset) / 900f);
-		GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1200f * scale) / 2f, topInset+(Screen.height-topInset-900f*scale)/2f,0),Quaternion.identity,new Vector3(scale,scale,1));
+		float scale = Mathf.Min(Screen.width / 1200f, Screen.height / 900f);
+		GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1200f * scale) / 2f, (Screen.height-900f*scale)/2f,0),Quaternion.identity,new Vector3(scale,scale,1));
 		pointerWanted = false;
 		if (profileMatch?.id != openCommanderMatch || profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over" || (!teacherMode && state?.phase == "ended"))
 			commanderOpen = false;
@@ -931,6 +926,7 @@ public partial class HistoryGame : MonoBehaviour
 		}
 
 		GUI.enabled = true;
+		if (focusAvailable && GUI.Button(new Rect(980,70,190,42),"Toggle Zoom",new GUIStyle(GUI.skin.button){fontSize=18})) ToggleBoardFocus();
 		if (commanderOpen)
 			DrawCommanderPanel(openCommander);
 		if (studentPaused) DrawPauseNotice();

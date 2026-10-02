@@ -14,7 +14,7 @@ public partial class HistoryGame
     Rect TopMessageRect(bool friendly)
     {
         bool both=TopNoticeVisible&&FriendlyMessageVisible();
-        if(!boardFocus)return both?new Rect(friendly?737:285,18,438,128):new Rect(285,18,890,128);
+        if(!boardFocus)return both?new Rect(friendly?625:285,18,325,128):new Rect(285,18,665,128);
         if(both&&Screen.width>=650)return new Rect(friendly?Screen.width/2+4:12,72,Screen.width/2-16,128);
         return new Rect(12,friendly&&both?208:72,Screen.width-24,128);
     }
