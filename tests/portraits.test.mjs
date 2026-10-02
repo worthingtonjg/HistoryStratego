@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { COMMANDERS } from '../server/commanders.mjs';
 test('every roster commander has one verified portrait with retained provenance', () => {
-	const provenance = JSON.parse(readFileSync('docs/commander-portraits.json', 'utf8'));
+	const provenance = JSON.parse(readFileSync('development-docs/commander-portraits.json', 'utf8'));
 	const folder = 'Assets/Resources/CommanderPortraits/';
 	const expected = COMMANDERS.map(c => c.id).sort();
 	assert.deepEqual(Object.keys(provenance).sort(), expected);
