@@ -823,9 +823,9 @@ public class HistoryGame : MonoBehaviour
 		};
 		bool playing = phase == "active" && m.phase == "play" && !DeadlineBlocked(m) && !m.blocked && m.battle?.kind != "combat";
 		string left = PlayerName(m, 1), right = PlayerName(m, 0);
-		while (style.fontSize > 12 && style.CalcSize(new GUIContent(left)).x + style.CalcSize(new GUIContent(right)).x + 210 > 900)
+		while (style.fontSize > 12 && Mathf.Max(style.CalcSize(new GUIContent(left)).x, style.CalcSize(new GUIContent(right)).x) + 70 > 300)
 			style.fontSize--;
-		float gap = 70, w0 = style.CalcSize(new GUIContent(left)).x + 70, w1 = style.CalcSize(new GUIContent(right)).x + 70, x = 270 + (900 - w0 - w1 - gap) / 2;
+		float gap = 70, w0 = Mathf.Min(300, Mathf.Max(style.CalcSize(new GUIContent(left)).x, style.CalcSize(new GUIContent(right)).x) + 70), w1 = w0, x = 600 - gap / 2 - w0;
 		for (int column = 0; column < 2; column++)
 		{
 			int side = 1 - column;
