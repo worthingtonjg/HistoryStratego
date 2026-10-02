@@ -1,3 +1,4 @@
+import {prepareStudentJoin,clearStudentSession,classroomRequestToken} from './student-session.mjs';
 import { renderClassState } from './class-status.mjs';
 import { createClassExit } from './class-exit.mjs';
 import { installMatchLog } from './match-log.mjs';
@@ -30,7 +31,7 @@ window.fetch = async (input, options = {}) => {
 				throw Error('Connect to a classroom first');
 			const body = options.body ?? (input instanceof Request ? await input.clone().text() : '{}'), text = typeof body === 'string' ? body : await new Response(body).text();
 			const headers = new Headers(options.headers || (input instanceof Request ? input.headers : {})), token = (headers.get('Authorization') || '').replace(/^Bearer /, '');
-			const value = await runtime.request(url.pathname.slice(5), JSON.parse(text), token);
+			const value = await runtime.request(url.pathname.slice(5), JSON.parse(text), classroomRequestToken(teacherPage, token));
 			if (value.classCode)
 				value.classCode = runtime.joinCode;
 			if (!teacherPage)
@@ -91,6 +92,7 @@ async function start(role, code = '', recovery = '') {
 	}
 	catch (e) {
 		setStatus(e.message);
+		if (!teacherPage && e.classRetired) { panel.hidden=true;toolbar.hidden=false;renderClassState({classRetired:true},document.querySelector('#connection-status'),document.querySelector('#next-class'),document.querySelector('#game'),document.querySelector('#class-ended')); }
 		starting = false;
 	}
 }
@@ -164,22 +166,11 @@ if (teacherPage) {
 else {
 	document.querySelector('#join').onclick = () => {
 		const code = document.querySelector('#join-code').value.trim().toUpperCase();
-		let prior;
-		try {
-			prior = JSON.parse(sessionStorage.getItem('history.browserSession') || 'null');
-		}
-		catch {
-		}
-		if (!prior || (prior.code !== code && prior.code?.split('-')[0] !== code))
-			sessionStorage.removeItem('studentToken');
-		sessionStorage.setItem('history.browserSession', JSON.stringify({
-			role: 'student', code
-		}));
+		prepareStudentJoin(sessionStorage,code);
 		location.replace(new URL('student.html', location.href));
 	};
 	const joinNextClass = () => {
-		sessionStorage.removeItem('history.browserSession');
-		sessionStorage.removeItem('studentToken');
+		clearStudentSession(sessionStorage);
 		location.replace(new URL('student.html', location.href));
 	};
 	document.querySelector('#next-class').onclick = joinNextClass;

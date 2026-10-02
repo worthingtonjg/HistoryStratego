@@ -1,3 +1,4 @@
+import {legacyStudentToken,activateStudentSeat} from './student-session.mjs';
 import { requireTeacherAccess } from './teacher-access.mjs';
 import { isRetired, rememberClassroom, retireClassroom, retiredRoom } from './classroom-memory.mjs';
 import { createAuthority } from './engine/authority.mjs';
@@ -57,7 +58,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	if (role === 'teacher' || role === 'recover')
 		requireTeacherAccess(teacherAccess);
 	if (code && isRetired(code.trim().toUpperCase()))
-		throw Error('Class ended. Ask for the new classroom code.');
+		throw Object.assign(Error('Class ended. Ask for the new classroom code.'),{classRetired:true});
 	sdk ??= await import(SDK);
 	const debug = globalThis.historyTransportDebug = {
 		sent: 0, received: 0, replied: 0, opened: 0, errors: []
@@ -80,7 +81,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 	const teacher = role === 'teacher';
 	pair = await keyPair(saved);
 	let pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey)), studentRecord = null;
-	const saveStudent = () => { if (studentRecord && studentStorage) studentStorage.setItem('history.student.' + code, JSON.stringify(studentRecord)); };
+	const saveStudent = () => { if (studentRecord && studentStorage) { studentStorage.setItem('history.student.' + code, JSON.stringify(studentRecord)); activateStudentSeat(studentStorage,code,studentRecord.token); } };
 	if (teacher) {
 		room = saved?.room;
 		recovery ||= random();
@@ -139,7 +140,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 			const candidate = sdk.getState('historyTeacher');
 			const candidateMatches = candidate?.code && (shortJoin ? candidate.code.split('-')[0] === requestedRoom : candidate.code === code);
 			if (candidateMatches && candidate.retired)
-				throw Error('Class ended. Ask for the new classroom code.');
+				throw Object.assign(Error('Class ended. Ask for the new classroom code.'),{classRetired:true});
 			if (candidateMatches && await fingerprint(candidate.pub) === candidate.code.split('-')[1]) {
 				code = candidate.code; // First-join trust for short codes; retain full identity for subsequent reconnects.
 				owner = candidate;
@@ -157,9 +158,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 				pair = await keyPair(studentRecord);
 				pub = b64(await crypto.subtle.exportKey('raw', pair.publicKey));
 			} else {
-				let legacy = null;
-				try { legacy = JSON.parse(studentStorage.getItem('history.browserSession') || 'null'); } catch {}
-				studentRecord = {code, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), token: legacy?.role === 'student' && legacy.code === code ? studentStorage.getItem('studentToken') || '' : ''};
+				studentRecord = {code, pub, privateKey: await crypto.subtle.exportKey('jwk', pair.privateKey), token: legacyStudentToken(studentStorage,code)};
 			}
 			// Persist identity before the first join can allocate a seat, even if its response is lost.
 			saveStudent();
@@ -288,7 +287,7 @@ export async function connectClassroom({ role, code = '', recovery = '', sdk = n
 		return route === 'state' ? {
 			classCode: code, phase: 'ended', classRetired: true, match: null, paired: false
 		} : {
-			error: 'Class ended. Ask for the new classroom code.'
+			error: 'Class ended. Ask for the new classroom code.', classRetired:true, phase:'ended', match:null
 		};
 	}
 	sdk.RPC.register('historyClassEnded', async (packet) => {

@@ -1,0 +1,7 @@
+# Classroom-specific student credentials
+
+Fixed the new-class join boundary: the browser adapter no longer forwards Unity's unscoped compatibility token for student requests. Student transport uses the token stored with the resolved full classroom identity. Activating that identity replaces or clears the compatibility token before Unity starts. Explicit Join snapshots any legacy token against its previous full identity, then clears global context. Legacy migration requires exact owner fingerprint/full-code equality, not just the short class code. Per-class records remain intact, so refresh resumes the seat and removed sessions remain revoked rather than silently allocating a new commander.
+
+Retired join responses and early connection rejection now carry explicit classroom-retirement metadata. The primary Class ended screen replaces connecting/waiting content even when retirement is detected before the first state poll. No real roster entries are removed or merged.
+
+Browser-only update; reuses the verified BoardFocusTouch Unity build unchanged. Focused regressions cover old class to explicit new class with a stale Unity token, same-class refresh, removed-seat denial, teacher recovery, full-identity legacy migration, reused short-code isolation and retired joins. Existing suite passed 233 tests before the additional legacy integration regression; focused final suite passed 20 tests. No live Playroom identities or user sessions were used. Phone/Unity assets are unchanged.
