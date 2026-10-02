@@ -9,6 +9,8 @@ const nativeFetch = window.fetch.bind(window), root = new URL('./', import.meta.
 const status = document.querySelector('#status'), panel = document.querySelector('#entry'), toolbar = document.querySelector('#classroom-bar');
 let runtime, starting = false, teacherAccess = null;
 const teacherPage = document.body.dataset.entry === 'teacher';
+const focusButton = document.querySelector('#board-focus');
+if (focusButton) focusButton.onclick = () => window.unityInstance?.SendMessage('HistoryGame', 'ToggleBoardFocus');
 let unityPromise;
 const unity = () => unityPromise ||= window.loadUnity().then(instance => (window.unityInstance = instance));
 const setStatus = s => {

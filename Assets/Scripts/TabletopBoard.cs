@@ -290,6 +290,7 @@ public class TabletopBoard : MonoBehaviour
 		lastRequested = Time.unscaledTime;
 		width = Mathf.Clamp(width, 400, 1400);
 		height = Mathf.Clamp(height, 300, 1050);
+		if (Layer == 30) view.orthographicSize = Mathf.Max(BoardHalfHeight, 5.6f * height / width);
 		if (!target || target.width != width || target.height != height)
 		{
 			if (target)

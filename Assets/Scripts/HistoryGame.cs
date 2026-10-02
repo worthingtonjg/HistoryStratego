@@ -177,7 +177,7 @@ public class Facts
 	public Fact[] items;
 }
 
-public class HistoryGame : MonoBehaviour
+public partial class HistoryGame : MonoBehaviour
 {
 #if UNITY_WEBGL && !UNITY_EDITOR
 	[DllImport("__Internal")]
@@ -806,6 +806,12 @@ public class HistoryGame : MonoBehaviour
 		float scale = Mathf.Min(Screen.width / 1200f, Screen.height / 900f);
 		GUI.matrix = Matrix4x4.TRS(new Vector3((Screen.width - 1200f * scale) / 2f, (Screen.height - 900f * scale) / 2f, 0), Quaternion.identity, new Vector3(scale, scale, 1));
 		var profileMatch = teacherMode ? (watchId != "" ? spectator?.match : null) : StudentMatch();
+		bool focusAvailable = profileMatch != null && !NeedsIntro(profileMatch);
+#if UNITY_WEBGL && !UNITY_EDITOR
+		HS_FocusState(focusAvailable ? 1 : 0, boardFocus ? 1 : 0);
+#endif
+		if (!focusAvailable) boardFocus = false;
+		if (boardFocus) { DrawBoardFocus(profileMatch); return; }
 		pointerWanted = false;
 		if (profileMatch?.id != openCommanderMatch || profileMatch?.battle?.kind == "combat" || profileMatch?.phase == "over" || (!teacherMode && state?.phase == "ended"))
 			commanderOpen = false;
@@ -1482,6 +1488,7 @@ public class HistoryGame : MonoBehaviour
 			return;
 		var commander = m.commanders != null && latest.side < m.commanders.Length ? m.commanders[latest.side] : null;
 		string name = !string.IsNullOrEmpty(commander?.fullName) ? commander.fullName : PlayerName(m, latest.side);
+		if (boardFocus) { DrawFocusMessage(m, latest, name); return; }
 		float alpha = Mathf.Min(1, (presetUntil[latest.side] - Time.unscaledTime) / .35f);
 		GUI.color = new Color(.025f, .045f, .065f, .96f * alpha);
 		GUI.DrawTexture(new Rect(285, 18, 890, 128), Texture2D.whiteTexture);
@@ -2133,8 +2140,9 @@ public class HistoryGame : MonoBehaviour
 			DismissFinished(m);
 	}
 
-	readonly Rect boardRect = new Rect(25, 178, 865, 555);
-	const int boardRenderWidth = 1400, boardRenderHeight = 899;
+	Rect boardRect => boardFocus && !focusLegacyOverlay ? FocusBoardRect() : new Rect(25, 178, 865, 555);
+	int boardRenderWidth => boardFocus ? 1000 : 1400;
+	int boardRenderHeight => boardFocus ? 1000 : 899;
 	TabletopBoard tabletop;
 	int shownSeq = -1;
 	float feedbackUntil, boostUntil;

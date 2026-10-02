@@ -1,4 +1,28 @@
 mergeInto(LibraryManager.library, {
+ HS_FocusState: function(available,active) {
+  window.historyBoardFocusAvailable=!!available; window.historyBoardFocusActive=!!active;
+  var canvas=document.getElementById('unity-canvas');
+  if(canvas) {
+   canvas.style.touchAction=active?'none':'';
+   if(!canvas.__historyFocusTouch) {
+    canvas.__historyFocusTouch=true;
+    var finger=null;
+    var mouse=function(type,touch,down){canvas.dispatchEvent(new MouseEvent(type,{bubbles:true,cancelable:true,clientX:touch.clientX,clientY:touch.clientY,button:0,buttons:down?1:0,detail:1,view:window}));};
+    var touch=function(event){
+     if(!window.historyBoardFocusActive&&finger===null)return;
+     if(event.type==='touchstart'&&finger===null&&event.touches.length===1){finger=event.changedTouches[0].identifier;mouse('mousedown',event.changedTouches[0],true);}
+     else if(finger!==null){
+      var current=Array.from(event.changedTouches).find(function(t){return t.identifier===finger;});
+      if(current){if(event.type==='touchmove')mouse('mousemove',current,true);else if(event.type==='touchend'||event.type==='touchcancel'){mouse('mouseup',current,false);finger=null;}}
+     }
+     event.preventDefault();event.stopImmediatePropagation();
+    };
+    ['touchstart','touchmove','touchend','touchcancel'].forEach(function(name){canvas.addEventListener(name,touch,{capture:true,passive:false});});
+   }
+  }
+  var button=document.getElementById('board-focus');
+  if(button){button.hidden=!available;button.textContent=active?'Normal view':'Board focus';button.setAttribute('aria-pressed',active?'true':'false');}
+ },
 	HS_ClearMatchViews: function () {
 		if (window.historyCloseMatchLog)
 			window.historyCloseMatchLog();
