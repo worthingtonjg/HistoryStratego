@@ -158,7 +158,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 		}
 	};
 }
-export function createOpponent(authority, teacherKey, classCode, savedToken = '') {
+export function createOpponent(authority, teacherKey, classCode, savedToken = '', {isActive=()=>true,now=Date.now,initialMemory=null,persist=async()=>{}} = {}) {
 	const joined = savedToken ? authority.call('state', {}, savedToken) : authority.call('join', {
 		classCode
 	}), token = savedToken || joined.token;
@@ -166,6 +166,7 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 	let stopped = false, busy = false;
 	const state = () => authority.call('state', {}, token);
 	async function command(action, body = {}) {
+		if(stopped || !isActive()) throw Error('Opponent is paused');
 		const s = state(), m = s.match;
 		if (action === 'status')
 			return s;
@@ -180,10 +181,10 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 		}, token);
 	}
 	const bot = policyOpponent({
-		command, delay: ms => new Promise(r => setTimeout(r, ms))
+		command, now, initialMemory, persist, delay: ms => new Promise(r => setTimeout(r, ms))
 	});
 	const timer = setInterval(async () => {
-		if (stopped || busy)
+		if (stopped || busy || !isActive())
 			return;
 		busy = true;
 		try {

@@ -182,6 +182,8 @@ public partial class HistoryGame : MonoBehaviour
 {
 #if UNITY_WEBGL && !UNITY_EDITOR
 	[DllImport("__Internal")]
+	static extern void HS_SoloAction(int replay);
+	[DllImport("__Internal")]
 	static extern string HS_LoadToken();
 	[DllImport("__Internal")]
 	static extern void HS_SaveToken(string token);
@@ -438,11 +440,18 @@ public partial class HistoryGame : MonoBehaviour
 		GUI.contentColor = oldContent;
 	}
 
+	bool soloMode;
+	void ReplaySolo() {
+#if UNITY_WEBGL && !UNITY_EDITOR
+		HS_SoloAction(1);
+#endif
+	}
 	public void BrowserLogin(string json)
 	{
 		browserMode = true;
 		baseUrl = "https://classroom.invalid"; // Virtual endpoint handled by the Playroom browser adapter.
 		var login = JsonUtility.FromJson<BrowserLoginData>(json);
+		soloMode = login.role == "solo";
 		code = login.code;
 		if (login.role == "teacher")
 		{
@@ -2100,7 +2109,7 @@ public partial class HistoryGame : MonoBehaviour
 		GUI.contentColor = resultColor;
 		GUI.Label(new Rect(230, 421, 740, 58), flavor, flavorStyle);
 		GUI.contentColor = Color.white;
-		GUI.Label(new Rect(240, 488, 720, 45), teacherView ? "Return to the teacher desk to manage the next round." : "Return to the waiting room for your teacher's next round.", new GUIStyle(centered) { fontSize = 16 });
+		GUI.Label(new Rect(240, 488, 720, 45), teacherView ? "Return to the teacher desk to manage the next round." : soloMode ? "Play again, or use Classroom entry above to return." : "Return to the waiting room for your teacher's next round.", new GUIStyle(centered) { fontSize = 16 });
 		if (teacherView)
 		{
 			if (Button(365, 545, 470, "Back to matches"))
@@ -2110,8 +2119,9 @@ public partial class HistoryGame : MonoBehaviour
 				nextPoll = 0;
 			}
 		}
-		else if (Button(365, 545, 470, "Back to waiting room"))
-			DismissFinished(m);
+		else if (Button(365, 545, 470, soloMode ? "Play again" : "Back to waiting room")) {
+			if (soloMode) ReplaySolo(); else DismissFinished(m);
+		}
 	}
 
 	Rect boardRect => boardFocus && !focusLegacyOverlay ? FocusBoardRect() : new Rect(25, 178, 865, 555);

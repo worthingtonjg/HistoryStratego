@@ -5,7 +5,7 @@ import { installMatchLog } from './match-log.mjs';
 import { installJoinPanel } from './join-panel.mjs';
 import { acceptUnityTeacherGate } from './teacher-access.mjs';
 import { currentClassroom, isRetired, rememberClassroom } from './classroom-memory.mjs';
-import { connectClassroom } from './transport.mjs';
+import {createSolo,SOLO_KEY} from './solo.mjs';
 const nativeFetch = window.fetch.bind(window), root = new URL('./', import.meta.url);
 const status = document.querySelector('#status'), panel = document.querySelector('#entry'), toolbar = document.querySelector('#classroom-bar');
 let runtime, starting = false, teacherAccess = null;
@@ -32,7 +32,7 @@ window.fetch = async (input, options = {}) => {
 			const value = await runtime.request(url.pathname.slice(5), JSON.parse(text), classroomRequestToken(teacherPage, token));
 			if (value.classCode)
 				value.classCode = runtime.joinCode;
-			if (!teacherPage)
+			if (!teacherPage && runtime.role!=='solo')
 				renderClassState(value, document.querySelector('#connection-status'), document.querySelector('#next-class'), document.querySelector('#game'), document.querySelector('#class-ended'));
 			return new Response(JSON.stringify(value), {
 				status: value.error ? 400 : 200, headers: {
@@ -59,6 +59,7 @@ async function start(role, code = '', recovery = '') {
 	starting = true;
 	setStatus('Connecting to Playroom...');
 	try {
+		const {connectClassroom}=await import('./transport.mjs');
 		runtime = await connectClassroom({
 			role, code, recovery, onStatus: setStatus, teacherAccess
 		});
@@ -93,6 +94,33 @@ async function start(role, code = '', recovery = '') {
 		if (!teacherPage && e.classRetired) { panel.hidden=true;toolbar.hidden=false;renderClassState({classRetired:true},document.querySelector('#connection-status'),document.querySelector('#next-class'),document.querySelector('#game'),document.querySelector('#class-ended')); }
 		starting = false;
 	}
+}
+const soloRequested=!teacherPage&&new URLSearchParams(location.search).get('solo')==='1';
+const tokenBackup='history.solo.tokenBackup';
+function restoreClassroomToken(){const raw=sessionStorage.getItem(tokenBackup);if(!raw)return;const saved=JSON.parse(raw);for(const key of ['studentToken','studentTokenClass']){if(saved[key]===null)sessionStorage.removeItem(key);else sessionStorage.setItem(key,saved[key]);}sessionStorage.removeItem(tokenBackup);}
+window.historySoloAction=replay=>{
+ if(!soloRequested)return;
+ if(replay&&!window.confirm('Start a new solo game? This replaces your current solo game.'))return;
+ runtime?.close();runtime=null;
+ if(replay)sessionStorage.removeItem(SOLO_KEY); // Restore classroom tokens on the destination page, after Unity unload saves its solo token.
+ location.replace(new URL(replay?'student.html?solo=1':'student.html?entry=1',location.href));
+};
+async function startSolo(){
+ if(starting)return;starting=true;
+ toolbar.hidden=false;toolbar.firstChild.textContent='Mode: ';document.querySelector('#public-code').textContent='Solo';
+ document.querySelector('#solo-tools').hidden=false;
+ document.querySelector('#solo-new').onclick=()=>window.historySoloAction(true);
+ document.querySelector('#solo-return').onclick=()=>window.historySoloAction(false);
+ try{
+  if(!sessionStorage.getItem(tokenBackup))sessionStorage.setItem(tokenBackup,JSON.stringify({studentToken:sessionStorage.getItem('studentToken'),studentTokenClass:sessionStorage.getItem('studentTokenClass')}));
+  sessionStorage.removeItem('studentToken');sessionStorage.removeItem('studentTokenClass');
+  runtime=createSolo({onStatus:setStatus});window.historyClassroom=runtime;
+  window.historyPresenceStatus=()=> 'Solo vs computer - no Playroom connection';
+  panel.hidden=true;document.querySelector('#game').hidden=false;
+  setStatus('Solo: progress saved in this tab. New game or return at any time.');
+  const instance=await unity();await new Promise(r=>setTimeout(r,600));
+  instance.SendMessage('HistoryGame','BrowserLogin',JSON.stringify({role:'solo',code:'SOLO'}));
+ }catch(e){setStatus(e.message);panel.hidden=false;}finally{starting=false;}
 }
 async function unlockTeacher() {
 	if (!teacherPage || teacherAccess)
@@ -162,6 +190,7 @@ if (teacherPage) {
 	});
 }
 else {
+	document.querySelector('#solo').onclick=()=>location.replace(new URL('student.html?solo=1',location.href));
 	document.querySelector('#join').onclick = () => {
 		const code = document.querySelector('#join-code').value.trim().toUpperCase();
 		prepareStudentJoin(sessionStorage,code);
@@ -176,7 +205,7 @@ else {
 	// Student-only refresh reuses its own seat, never a saved teacher session.
 	try {
 		const previous = JSON.parse(sessionStorage.getItem('history.browserSession') || 'null');
-		if (previous?.role === 'student') {
+		if (!soloRequested && !new URLSearchParams(location.search).has('entry') && previous?.role === 'student') {
 			document.querySelector('#join-code').value = previous.code;
 			start('student', previous.code);
 		}
@@ -184,4 +213,5 @@ else {
 	catch {
 	}
 }
+if(soloRequested)startSolo();else restoreClassroomToken();
 window.addEventListener('pagehide', () => runtime?.close());
