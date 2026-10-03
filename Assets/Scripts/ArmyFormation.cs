@@ -95,6 +95,10 @@ public static class ArmyFormation
 		rng.Shuffle(front);
 		for (int i = 0; i < 8; i++)
 			cells[front[i]] = "2";
+		var back = new List<int>();
+		for (int i = 30; i < 40; i++) if (cells[i] == null) back.Add(i);
+		rng.Shuffle(back);
+		for (int i = 0; i < Math.Min(5, back.Count); i++) cells[back[i]] = "3";
 		var bag = new List<string>();
 		for (int i = 0; i < ranks.Length; i++)
 		{

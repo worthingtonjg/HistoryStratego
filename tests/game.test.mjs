@@ -107,7 +107,7 @@ test('no legal move causes defeat', () => {
 	move(m, 0, 60, 50, 0, 'x');
 	assert.equal(m.winner, 0);
 });
-test('third repeated two-square traversal prohibited, other-piece move resets', () => {
+test('repeated two-square traversal remains legal', () => {
 	const m = sparse();
 	m.board[60] = piece(0, '4', 'p');
 	m.history[0] = [{
@@ -115,7 +115,7 @@ test('third repeated two-square traversal prohibited, other-piece move resets', 
 	}, {
 		id: 'p', from: 50, to: 60
 	}];
-	assert(!legal(m, 0, 60, 50));
+	assert(legal(m, 0, 60, 50));
 	assert(legal(m, 0, 60, 61));
 	m.history[0][0].id = 'different';
 	assert(legal(m, 0, 60, 50));

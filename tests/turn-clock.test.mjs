@@ -89,9 +89,8 @@ test('actual setup expiry blocks both seats for three seconds; early locking doe
 	const f = fixture(true);
 	f.call(0, 'setup/begin');
 	f.call(1, 'setup/begin');
-	f.call(1, 'setup', {
-		revision: 0
-	});
+	for (let stage = 1; stage < 3; stage++) f.call(1, 'setup/next', {revision: f.call(1, 'state').match.setup.revision});
+	f.call(1, 'setup', {revision: f.call(1, 'state').match.setup.revision});
 	f.advance(300000);
 	assert.equal(f.call(0, 'state').match.setup.noticeRemainingMs, 3000);
 	assert.equal(f.call(1, 'state').match.setup.noticeRemainingMs, 0);
@@ -211,9 +210,8 @@ test('late notice polling shows remaining only and fresh round resets deadline a
 	f.advance(500);
 	assert.equal(f.call(0, 'state').match.setup.noticeRemainingMs, 0);
 	f.call(1, 'setup/begin');
-	f.call(1, 'setup', {
-		revision: 0
-	});
+	for (let stage = 1; stage < 3; stage++) f.call(1, 'setup/next', {revision: f.call(1, 'state').match.setup.revision});
+	f.call(1, 'setup', {revision: f.call(1, 'state').match.setup.revision});
 	expire(f);
 	f.advance(3000);
 	f.a.call('teacher/end', {}, 'test');

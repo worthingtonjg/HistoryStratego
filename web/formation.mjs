@@ -27,6 +27,8 @@ export function generateFormation(seed = crypto.getRandomValues(new Uint32Array(
 		length: 10
 	}, (_, i) => i)).slice(0, 8))
 		cells[i] = '2';
+	for (const i of shuffle(Array.from({length: 10}, (_, i) => 30 + i).filter(i => cells[i] === null)).slice(0, 5))
+		cells[i] = '3';
 	const bag = [];
 	for (let i = 0; i < ranks.length; i++)
 		for (let n = cells.filter(r => r === ranks[i]).length; n < counts[i]; n++)
@@ -53,6 +55,8 @@ export function fillFormation(draft, stage = 3, seed = crypto.getRandomValues(ne
  if(stage===3){
   let scouts=8-cells.filter(r=>r==='2').length;
   for(const i of shuffle(empty().filter(i=>i<10))){if(scouts===0)break;cells[i]='2';scouts--;}
+  let miners=5-cells.filter(r=>r==='3').length;
+  for(const i of shuffle(empty().filter(i=>i>=30))){if(miners===0)break;cells[i]='3';miners--;}
   const bag=[];for(const [rank,total] of Object.entries(inventory))for(let n=cells.filter(r=>r===rank).length;n<total;n++)bag.push(rank);
   shuffle(bag);for(const i of empty())cells[i]=bag.pop();
  }

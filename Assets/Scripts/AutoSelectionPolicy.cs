@@ -118,11 +118,7 @@ public static class AutoSelectionPolicy
 				int to = y * 10 + x;
 				if (Lake(to) || match.board[to]?.side == match.side)
 					break;
-				bool repeated = positions.TryGetValue(from, out var identity) && recent.Count == 2 && recent[0].Identity == identity && recent[1].Identity == identity && recent[0].From == from && recent[0].To == to && recent[1].From == to && recent[1].To == from;
-				if (!repeated)
-					return true;
-				if (match.board[to] != null)
-					break;
+				return true;
 			}
 		}
 

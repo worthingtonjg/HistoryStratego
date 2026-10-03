@@ -2,7 +2,8 @@ using UnityEngine;
 
 public partial class HistoryGame
 {
-    bool TopNoticeVisible => !teacherMode && state?.phase != "paused" && (tipVisible || (reminderVisible && Time.unscaledTime-turnNoticeStart>=2));
+    bool TurnNoticeVisible => Time.unscaledTime-turnNoticeStart>=0 && Time.unscaledTime-turnNoticeStart<2;
+    bool TopNoticeVisible => !teacherMode && state?.phase != "paused" && (tipVisible || TurnNoticeVisible || (reminderVisible && Time.unscaledTime-turnNoticeStart>=2));
     bool FriendlyMessageVisible()
     {
         var m=teacherMode?spectator?.match:StudentMatch();

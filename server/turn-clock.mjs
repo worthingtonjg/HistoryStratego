@@ -13,7 +13,7 @@ export function turnView(m, now) {
 		enabled: true, side: m.turn, seq: m.seq, remainingMs: c?.remaining ?? TURN_MS, noticeRemainingMs: c?.notice ?? 0, bannerRemainingMs: c?.banner ?? TURN_BANNER_MS, serverNow: now
 	} : null;
 }
-export function tickTurn(m, phase, now) {
+export function tickTurn(m, phase, now, npc = false) {
 	if (!m.timedTurns)
 		return;
 	let c = m.turnClock;
@@ -53,7 +53,7 @@ export function tickTurn(m, phase, now) {
 		return;
 	const side = m.turn;
 	// Policy sees exactly the participant projection, never the authoritative board.
-	const plan = planDemoMoves(view(m, side), m.timeoutMemory[side]);
+	const plan = planDemoMoves(view(m, side), m.timeoutMemory[side], { restrictMinerAttacks: npc, restrictMarshalAttacks: npc });
 	m.timeoutMemory[side] = plan.memory;
 	const choice = [...plan.candidates, ...plan.fallback, ...plan.emergency].find(p => legal(m, side, p.from, p.to));
 	if (!choice) {
@@ -61,6 +61,11 @@ export function tickTurn(m, phase, now) {
 		const any = m.board.some((p, from) => p?.side === side && Array.from({
 			length: 100
 		}, (_, to) => to).some(to => legal(m, side, from, to)));
+		if (any && npc) {
+			// A policy hold is not defeat or permission to violate the NPC attack whitelist.
+			c.remaining = TURN_MS; c.notice = 0; c.banner = 0;
+			return;
+		}
 		if (any)
 			throw Error('Timeout policy failed to enumerate a legal move');
 		m.phase = 'over';
@@ -75,7 +80,7 @@ export function tickTurn(m, phase, now) {
 	const event = m.events.find(e => e.seq === m.seq && ['move', 'combat'].includes(e.kind));
 	if (event)
 		event.automatic = true;
-	tickTurn(m, phase, now);
+	tickTurn(m, phase, now, npc);
 }
 export function checkTurnGate(m) {
 	if (setupBlocked(m))

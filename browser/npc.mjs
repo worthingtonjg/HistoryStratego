@@ -134,7 +134,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 				});
 			if (!choice) {
 				stalled = key;
-				stalledReason = 'No authoritative legal target is available.';
+				stalledReason = 'No move meets the NPC safety policy.';
 				report('stalled', {
 					seq: m.seq, reason: stalledReason, policy: plan.status
 				});

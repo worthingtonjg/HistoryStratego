@@ -1152,22 +1152,8 @@ public partial class HistoryGame : MonoBehaviour
 	}
 	void DrawTurnNotice()
 	{
-		float elapsed = Time.unscaledTime - turnNoticeStart;
-		if (elapsed < 0 || elapsed >= 2)
-			return;
-		float width = Mathf.Lerp(360, 1080, Mathf.SmoothStep(0, 1, Mathf.Min(elapsed / .4f, 1))), alpha = Mathf.Min(1, (2 - elapsed) / .3f);
-		GUI.color = new Color(.025f, .045f, .065f, .94f * alpha);
-		GUI.DrawTexture(new Rect(600 - width / 2, 395, width, 110), Texture2D.whiteTexture);
-		GUI.color = Color.white;
-		GUI.contentColor = new Color(1, 1, 1, alpha);
-		var style = new GUIStyle(GUI.skin.label)
-		{
-			fontSize = 48,
-			fontStyle = FontStyle.Bold,
-			alignment = TextAnchor.MiddleCenter
-		};
-		GUI.Label(new Rect(600 - width / 2, 395, width, 110), "YOUR TURN", style);
-		GUI.contentColor = Color.white;
+		if (!TurnNoticeVisible || tipVisible) return;
+		DrawTopNotice("YOUR TURN", "Select a piece and a highlighted destination.", "");
 	}
 
 	void DrawTeacher()
@@ -1669,7 +1655,7 @@ public partial class HistoryGame : MonoBehaviour
 			"On your turn, select your piece and a highlighted destination. Green means move; orange means attack. Move one square horizontally or vertically. Lakes, your own pieces and diagonal moves are off limits.",
 			"Scouts can move any clear straight distance. Flag and Bombs cannot move. Enemy ranks stay hidden until combat; higher ranks win and equal ranks both leave the board.",
 			"A Miner defuses a Bomb; other attackers lose to Bombs. A Spy beats a Marshal only when the Spy attacks. After combat, both players acknowledge the reveal before play continues.",
-			"Plan ahead: protect your Flag, scout safely and remember revealed ranks. A third consecutive move by the same piece between the same two squares is not allowed. The in-game Instructions tab lists ranks and counts."
+			"Plan ahead: protect your Flag, scout safely and remember revealed ranks. Repeated back-and-forth moves are allowed. The in-game Instructions tab lists ranks and counts."
 		};
 		float height = 0;
 		foreach (var text in instructions)

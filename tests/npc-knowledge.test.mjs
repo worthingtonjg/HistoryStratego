@@ -106,11 +106,11 @@ test('known losses are excluded while ties and special combat rules are classifi
 	assert.equal(knownOutcome('5', '5'), 0);
 	assert.equal(knownOutcome('2', 'F'), 1);
 });
-test('only Spy gets targeted pursuit; revealed weak or strong ranks do not change ordinary route scoring', () => {
+test('ordinary ranks 4-9 keep shared route scoring; Spy and Marshal have separate pursuit', () => {
 	const a = fixture({
-		60: own('10'), 30: enemy(), 35: enemy()
+		60: own('9'), 30: enemy(), 35: enemy()
 	}), b = fixture({
-		60: own('10'), 30: enemy(), 35: enemy()
+		60: own('9'), 30: enemy(), 35: enemy()
 	}, [reveal(30, '2')]);
 	assert.deepEqual(plan(a).candidates, plan(b).candidates);
 	const strong = fixture({

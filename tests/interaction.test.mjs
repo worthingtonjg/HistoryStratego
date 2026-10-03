@@ -29,7 +29,7 @@ test('authoritative targets include complete scout rays, attack distinction, lak
 	}, {
 		id: 'repeat', from: 50, to: 60
 	}];
-	assert(!destinations(m, 0, 60).some(t => t.to === 50));
+	assert(destinations(m, 0, 60).some(t => t.to === 50));
 	for (const r of ['B', 'F']) {
 		m.board[60] = p(0, r);
 		assert.throws(() => select(m, 0, 60, 0));

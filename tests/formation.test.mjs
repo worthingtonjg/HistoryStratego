@@ -18,6 +18,7 @@ export function checkFormation(ranks) {
 	if (f % 10 < 9)
 		assert.equal(ranks[f + 1], 'B');
 	assert.equal(ranks.slice(0, 10).filter(r => r === '2').length, 8);
+	assert.equal(ranks.slice(30).filter(r => r === '3').length, 5);
 	assert(ranks.every(r => Object.hasOwn(COUNTS, r)));
 }
 test('seeded constrained formations cover both orientations, corners, counts and independent variation', () => {
@@ -37,6 +38,7 @@ test('seeded constrained formations cover both orientations, corners, counts and
 				if (Math.floor((flag + d) / 10) === Math.floor(flag / 10))
 					assert.equal(board[flag + d].rank, 'B');
 			assert.equal(board.filter((p, i) => p?.rank === '2' && Math.floor(i / 10) === (side === 0 ? 6 : 3)).length, 8);
+			assert.equal(board.filter((p,i) => p?.rank === '3' && Math.floor(i/10) === (side === 0 ? 9 : 0)).length, 5);
 			assert.equal(board.filter(Boolean).length, 40);
 			assert(view(m, 1 - side).board.filter(Boolean).every(p => p.rank === '?'));
 		}

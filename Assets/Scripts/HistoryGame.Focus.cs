@@ -92,6 +92,7 @@ public partial class HistoryGame
         if(paused){focusMessages=false;FocusNotice("Paused by teacher","Please wait. Your game resumes when your teacher is ready.");}
         else if(blocked)DrawDeadlineNotice(m);
         else if(tipVisible&&!teacherMode){DrawTutorialTip();}
+        else if(TurnNoticeVisible&&!teacherMode)DrawTurnNotice();
         else if(reminderVisible&&!teacherMode&&m.phase=="play"&&m.battle?.kind!="combat")DrawTurnReminder();
         if(!paused&&!blocked)DrawPresetNotification(m);
         if(focusMessages&&!paused&&!blocked&&!teacherMode){

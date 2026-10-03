@@ -13,6 +13,6 @@ The board uses 100 squares and blocked lake cells 42,43,46,47,52,53,56,57 (zero-
 
 One orthogonal square per ordinary move. Scouts can cross clear straight paths and attack at distance, never jump. Bombs and Flags cannot move. Higher combat rank wins, equals both disappear; only an attacking Spy defeats Marshal, and only Miner defeats a Bomb. Flag capture or inability to make a legal move loses.
 
-The retail two-square rule prevents the third consecutive traversal between the same two squares by one piece on that player's turns. Tournament “more-square” chasing adjudication is not implemented. No shortened classroom mode is used.
+Classroom house rule: repeated back-and-forth moves are allowed; the retail two-square repetition restriction is deliberately omitted. Tournament “more-square” chasing adjudication is not implemented. No shortened classroom mode is used.
 
 Faction names and piece encounters are fictional game framing. No claim is made that Marshal/Spy/Bomb labels describe historically exact American Civil War units.

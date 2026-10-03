@@ -82,7 +82,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		for (const m of matches.values()) {
 			tickBattleContinue(m, phase, now());
 			tickSetup(m, phase, now());
-			tickTurn(m, phase, now());
+			tickTurn(m, phase, now(), students.get(m.players[m.turn])?.npc === true);
 		}
 	};
 	return installPresentation({

@@ -62,10 +62,6 @@ export function legal(m, side, from, to) {
 	for (let i = from + step; i !== to; i += step)
 		if (lake(i) || m.board[i])
 			return false;
-	// Classic retail rule: third consecutive traversal between the same two squares is disallowed.
-	const h = m.history[side];
-	if (h.length >= 2 && h.at(-1).id === p.id && h.at(-2).id === p.id && h.at(-1).from === to && h.at(-1).to === from && h.at(-2).from === from && h.at(-2).to === to)
-		return false;
 	return true;
 }
 export function resolve(a, d) {

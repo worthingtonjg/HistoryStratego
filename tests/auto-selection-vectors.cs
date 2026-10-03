@@ -172,9 +172,9 @@ class AutoSelectionVectors
 		repeat.board[61] = P(0, "B");
 		repeat.board[70] = P(0, "B");
 		repeat.board[79] = P(0, "5");
-		First(repeat, 79, "two-square restriction can make last piece blocked");
+		First(repeat, 60, "repeated returns remain legal");
 		repeat.board[60].rank = "2";
-		First(repeat, 60, "scout may pass forbidden adjacent return to a further legal square");
+		First(repeat, 60, "scout may repeat a return or choose a further legal square");
 		var privacy = new MatchView
 		{
 			side = 0

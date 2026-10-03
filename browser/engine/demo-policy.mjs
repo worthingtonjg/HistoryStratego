@@ -59,6 +59,7 @@ function synchronize(m, previous) {
 	for (let i = 0; i < 100; i++)
 		if (ownMiner(m.board[i], m.side) && !Object.values(mem.miners).includes(i))
 			mem.miners['miner-' + mem.nextMiner++] = i;
+	mem.enemySpyEliminated = mem.enemySpyEliminated === true || events.some(e => e.kind === 'combat' && (e.side === m.side ? e.defender === '1' && e.outcome >= 0 : e.attacker === '1' && e.outcome <= 0));
 	mem.knowledge = observeRanks(m, mem.knowledge);
 	mem.lastSeq = m.seq;
 	return mem;
@@ -80,7 +81,7 @@ function route(board, start, goal, safe) {
 	}
 	return null;
 }
-export function planDemoMoves(state, previous) {
+export function planDemoMoves(state, previous, { restrictMinerAttacks = true, restrictMarshalAttacks = true } = {}) {
 	const m = state.match || state;
 	if (!m?.id || !Array.isArray(m.board) || m.board.length !== 100 || ![0, 1].includes(m.side))
 		throw Error('Own redacted match view required');
@@ -88,15 +89,24 @@ export function planDemoMoves(state, previous) {
 	const knownSquares = new Set(known.map(b => b.square));
 	const danger = i => m.board[i]?.side === 1 - m.side && !knownSquares.has(i) || neighbors(i).some(j => m.board[j]?.side === 1 - m.side && !knownSquares.has(j));
 	const safe = i => !danger(i);
+	// A known bomb is a concrete objective. Unknown adjacent defenders are a risk,
+	// not proof that every route is impossible. Never infer their hidden ranks.
+	const observed = new Map(Object.values(memory.knowledge.pieces).map(p => [p.square, p.rank]));
+	const missionSafe = i => !(m.board[i]?.side === 1 - m.side && !knownSquares.has(i) && !['1', '2'].includes(observed.get(i))) && !neighbors(i).some(j => {
+		if (m.board[j]?.side !== 1 - m.side || knownSquares.has(j)) return false;
+		const rank = observed.get(j);
+		return rank && !['B', 'F', '1', '2'].includes(rank);
+	});
+	const bombRoute = (from, to) => route(m.board, from, to, safe) || route(m.board, from, to, missionSafe);
 	let assignment = memory.assignment, path = null;
 	if (assignment && memory.miners[assignment.minerId] !== undefined && known.some(b => b.square === assignment.bombSquare))
-		path = route(m.board, memory.miners[assignment.minerId], assignment.bombSquare, safe);
+		path = bombRoute(memory.miners[assignment.minerId], assignment.bombSquare);
 	if (!path) {
 		assignment = null;
 		const options = [];
 		for (const bomb of known)
 			for (const [minerId, from] of Object.entries(memory.miners)) {
-				const p = route(m.board, from, bomb.square, safe);
+				const p = bombRoute(from, bomb.square);
 				if (p)
 					options.push({
 						minerId, bombSquare: bomb.square, path: p, discoveredSeq: bomb.discoveredSeq
@@ -188,6 +198,12 @@ export function planDemoMoves(state, previous) {
 		if (choices.length)
 			returnPaths.set(from, choices[0]);
 	}
+	const marshalRoutes = new Map();
+	for (let from = 0; from < 100; from++) if (m.board[from]?.side === m.side && m.board[from].rank === '10') {
+		const routes = [...knownRanks].filter(([at, rank]) => m.board[at]?.side === 1 - m.side && Number(rank) >= 2 && (Number(rank) <= 9 || rank === '10' && memory.enemySpyEliminated))
+			.map(([at]) => route(m.board, from, at, () => true)).filter(Boolean).sort((a,b) => a.length-b.length || a.at(-1)-b.at(-1));
+		if (routes.length) marshalRoutes.set(from, routes[0]);
+	}
 	const candidates = [], fallback = [], emergency = [];
 	const reachable = reachableFrontier(m.board, m.side);
 	const approaches = attackApproaches(m.board, m.side, knownSquares);
@@ -204,10 +220,13 @@ export function planDemoMoves(state, previous) {
 				const to = y * 10 + x, q = m.board[to];
 				if (LAKES.has(to) || q?.side === m.side)
 					break;
+				const minerAttack = p.rank === '3' && q && ['1', '2', 'B'].includes(knownRanks.get(to));
+				if (restrictMinerAttacks && p.rank === '3' && q && !minerAttack) break;
+				if (restrictMarshalAttacks && p.rank === '10' && q && (['1', 'B'].includes(knownRanks.get(to)) || knownRanks.get(to) === '10' && !memory.enemySpyEliminated)) break;
 				const assigned = assignment && memory.miners[assignment.minerId] === from;
 				const special = ['1', '3'].includes(p.rank), mission = p.rank === '1' ? memory.spyTarget !== null : assigned;
 				const returnPath = returnPaths.get(from);
-				const homeAllowed = !special || mission || home(to, m.side) || (!home(from, m.side) && returnPath?.[1] === to);
+				const homeAllowed = !special || mission || minerAttack || home(to, m.side) || (!home(from, m.side) && returnPath?.[1] === to);
 				if (!homeAllowed) {
 					const loss = knownOutcome(p.rank, knownRanks.get(to));
 					const safeTarget = p.rank === '1' ? spySafe(to, from, loss === 1 && knownRanks.get(to) === '10' ? to : -1) : safe(to);
@@ -220,7 +239,7 @@ export function planDemoMoves(state, previous) {
 					continue;
 				}
 				const outcome = knownOutcome(p.rank, knownRanks.get(to));
-				const unsafeMiner = p.rank === '3' && !safe(to), unsafeSpy = p.rank === '1' && !spySafe(to, from, outcome === 1 && knownRanks.get(to) === '10' ? to : -1);
+				const unsafeMiner = p.rank === '3' && !(minerAttack || assigned && path?.[1] === to ? missionSafe(to) : safe(to)), unsafeSpy = p.rank === '1' && !spySafe(to, from, outcome === 1 && knownRanks.get(to) === '10' ? to : -1);
 				fallback.push({
 					from, to, score: (outcome < 0 ? -100 - Number(p.rank) : 0) - (unsafeMiner || unsafeSpy ? 30 : 0), reason: outcome < 0 ? 'forced-known-loss' : 'forced-safety-fallback'
 				});
@@ -229,7 +248,7 @@ export function planDemoMoves(state, previous) {
 						break;
 					continue;
 				}
-				if (p.rank === '3' && !safe(to)) {
+				if (unsafeMiner) {
 					if (q)
 						break;
 					continue;
@@ -243,6 +262,7 @@ export function planDemoMoves(state, previous) {
 				const pressure = attackPressure(m.board, m.side, from, to, approaches, m.events);
 				let score = pressure.score - Math.min(memory.visits[to] || 0, 4) * .5 + (q ? (p.rank === '3' ? 29 : p.rank === '2' ? 26 : p.rank === '1' ? -5 : 22) + (outcome > 0 ? 18 : 0) + (knownRanks.get(to) === 'F' ? 100 : 0) : 0);
 				let reason = 'ordinary';
+				if (p.rank === '10' && marshalRoutes.get(from)?.[1] === to) { score += q ? 80 : 40; reason = 'marshal-known-pawn-route'; }
 				if (returnPath?.[1] === to) {
 					score += 1500;
 					reason = 'safe-return-home';

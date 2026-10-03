@@ -179,23 +179,24 @@ test('trapped miner holds while another piece moves', () => {
 	assert.ok(p.candidates.length);
 	assert.ok(p.candidates.every(c => c.from !== 60));
 });
-test('known bomb is safety exception, but adjacent unknown enemy blocks disarm', () => {
+test('known bomb mission tolerates an unknown adjacent defender', () => {
 	let m = fixture({
 		40: own(), 30: enemy()
 	}, [bomb(30)]), p = plan(m);
 	assert.equal(p.candidates[0].to, 30);
 	m.board[31] = enemy();
 	p = plan(m, p.memory);
-	assert.ok(p.candidates.every(c => c.to !== 30));
-	assert.equal(p.memory.assignment, null);
+	assert.equal(p.candidates[0].to, 30);
+	assert.ok(p.memory.assignment);
 });
-test('unsafe route reassigns or falls back without dropping discovered target', () => {
+test('known stronger defender blocks mission without dropping discovered target', () => {
 	const m = fixture({
 		60: own(), 30: enemy()
 	}, [bomb(30)]);
 	let p = plan(m);
 	m.board[31] = enemy();
 	m.seq++;
+	m.events.push({ ...bomb(31, m.seq), defender: '6' });
 	p = plan(m, p.memory);
 	assert.equal(p.memory.assignment, null);
 	assert.equal(p.memory.bombs[30].removed, false);
@@ -205,7 +206,7 @@ test('unsafe route reassigns or falls back without dropping discovered target', 
 	p = plan(m, p.memory);
 	assert.ok(p.memory.assignment);
 });
-test('deterministic seeded positions never send miners adjacent to unknown enemies', () => {
+test('only purposeful bomb approaches may risk unknown enemy adjacency', () => {
 	let seed = 472;
 	const rnd = n => {
 		seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
@@ -223,7 +224,7 @@ test('deterministic seeded positions never send miners adjacent to unknown enemi
 		const p = plan(m);
 		assert.deepEqual(plan(m), p);
 		for (const c of p.candidates) {
-			if (m.board[c.from].rank !== '3')
+			if (m.board[c.from].rank !== '3' || c.reason === 'assigned-bomb-route')
 				continue;
 			for (let i = 0; i < 100; i++)
 				if (m.board[i]?.side === 1 && i !== 30) {
