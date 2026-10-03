@@ -26,7 +26,7 @@ export function opponentAction(state) {
 		return 'wait-setup-notice';
 	if (m.turnClock?.noticeRemainingMs > 0)
 		return 'wait-timeout-notice';
-	if (m.turnClock?.bannerRemainingMs > 0)
+	if (m.turnClock?.bannerRemainingMs > 0 && m.events?.at(-1)?.kind !== 'move')
 		return 'wait-turn-banner';
 	return m.turn === m.side ? 'move' : 'wait-human-turn';
 }
@@ -65,7 +65,7 @@ export function createOpponent({ command, delay, now = Date.now, emit = () => {
 						seq: m.battle.seq, combat: m.battle.text
 					});
 				}
-				if (now() - reviewStarted < 8000)
+				if (now() - reviewStarted < 3000)
 					return;
 				const latest = await command('status');
 				if (opponentAction(latest) === 'review-own-combat' && latest.match.id === m.id && latest.match.battle.seq === m.battle.seq) {
@@ -145,7 +145,7 @@ export function createOpponent({ command, delay, now = Date.now, emit = () => {
 			report('selected', {
 				side: m.side, seq: m.seq, from: choice.from
 			});
-			await delay(firstMove ? 1200 : 2400);
+			await delay(300);
 			const latest = await command('status');
 			if (opponentAction(latest) !== 'move' || latest.match.id !== m.id || latest.match.seq !== m.seq || latest.match.selection?.from !== choice.from || !latest.match.selection.targets.some(t => t.to === choice.to))
 				return;
@@ -153,7 +153,7 @@ export function createOpponent({ command, delay, now = Date.now, emit = () => {
 				from: choice.from, to: choice.to
 			});
 			firstMove = false;
-			cooldown = now() + 4000;
+			cooldown = now();
 			report('moved', {
 				side: m.side, seq: moved.match?.seq, from: choice.from, to: choice.to
 			});

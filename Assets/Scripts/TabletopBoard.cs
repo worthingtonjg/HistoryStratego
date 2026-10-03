@@ -17,6 +17,7 @@ public class TabletopBoard : MonoBehaviour
 	readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
 	string signature = "";
 	Font font;
+	Material boardRankMaterial;
 	bool dirty;
 	float lastWaterFrame, lastRequested;
 	bool animatedWater;
@@ -63,6 +64,7 @@ public class TabletopBoard : MonoBehaviour
 		root.transform.SetParent(transform, false);
 		root.layer = Layer;
 		font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+		if (Layer == 30) { boardRankMaterial = new Material(Resources.Load<Shader>("BoardRank")); boardRankMaterial.mainTexture = font.material.mainTexture; mats["board-rank"] = boardRankMaterial; Font.textureRebuilt += RefreshRankAtlas; }
 		var cameraObject = new GameObject("Cached tabletop camera");
 		cameraObject.transform.SetParent(transform, false);
 		view = cameraObject.AddComponent<Camera>();
@@ -114,7 +116,7 @@ public class TabletopBoard : MonoBehaviour
 			text.alignment = TextAlignment.Left;
 			text.color = Color.black;
 			text.fontStyle = FontStyle.Bold;
-			label.GetComponent<Renderer>().sharedMaterial = font.material;
+			label.GetComponent<Renderer>().sharedMaterial = boardRankMaterial != null ? boardRankMaterial : font.material;
 			numbers[i] = text;
 			g.SetActive(false);
 		}
@@ -489,8 +491,16 @@ public class TabletopBoard : MonoBehaviour
 		return view.WorldToViewportPoint(Position(n) + Vector3.up * .3f);
 	}
 
+	void RefreshRankAtlas(Font changed)
+	{
+		if (changed != font || boardRankMaterial == null) return;
+		boardRankMaterial.mainTexture = font.material.mainTexture;
+		dirty = true;
+	}
+
 	void OnDestroy()
 	{
+		Font.textureRebuilt -= RefreshRankAtlas;
 		if (gridMesh) DestroyImmediate(gridMesh);
 		if (target)
 		{

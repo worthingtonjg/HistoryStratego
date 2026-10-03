@@ -6,7 +6,7 @@ import { legal } from '../server/game.mjs';
 import { createOpponent, opponentAction, opponentCanArm } from '../tools/human-opponent.mjs';
 for (const side of [0, 1])
 	for (const timeout of [false, true])
-		test(`NPC side${side} first move after ${timeout ? 'expired' : 'manual'} setup respects notices with1200ms thinking`, async () => {
+		test(`NPC side${side} first move after ${timeout ? 'expired' : 'manual'} setup respects notices with300ms thinking`, async () => {
 			let time = 1000000;
 			const a = createAuthority({
 				classCode: 'FIRST', teacherKey: 'fixture', now: () => time
@@ -75,20 +75,22 @@ for (const side of [0, 1])
 					...chosen, seq: m.seq, requestId: 'human-opening'
 				});
 			}
-			await bot.tick();
-			assert.equal(statuses.at(-1), 'wait-turn-banner');
-			assert(!calls.includes('select'));
-			advance(2000);
+			if (side === 0) {
+				await bot.tick();
+				assert.equal(statuses.at(-1), 'wait-turn-banner');
+				assert(!calls.includes('select'));
+				advance(2000);
+			} // After an ordinary human move the NPC need not wait for the nonblocking banner.
 			const start = time, seq = m.seq, cpu = performance.now();
 			await bot.tick();
 			const cpuMs = performance.now() - cpu;
 			assert.equal(m.seq, seq + 1);
 			assert.equal(m.events.at(-1).side, side);
-			assert.deepEqual(delays, [1200]);
-			assert.equal(time - start, 1200);
+			assert.deepEqual(delays, [300]);
+			assert.equal(time - start, 300);
 			assert.equal(calls.filter(x => x === 'move').length, 1);
 			console.log(JSON.stringify({
-				scenario: `side${side}-${timeout ? 'timeout' : 'manual'}`, virtualThinkMs: 1200, cpuMs: Math.round(cpuMs * 100) / 100, scope: 'in-process authority, excludes mailbox/browser/network'
+				scenario: `side${side}-${timeout ? 'timeout' : 'manual'}`, virtualThinkMs: 300, cpuMs: Math.round(cpuMs * 100) / 100, scope: 'in-process authority, excludes mailbox/browser/network'
 			}));
 		});
 test('driver waits through authoritative turn announcement and cannot be armed for wrong/ended round', () => {
@@ -141,5 +143,5 @@ test('new match clears previous cooldown and gets its own first-move pacing', as
 	start();
 	await bot.tick();
 	assert.equal(m.seq, 1);
-	assert.deepEqual(delays, [1200, 1200]);
+	assert.deepEqual(delays, [300, 300]);
 });

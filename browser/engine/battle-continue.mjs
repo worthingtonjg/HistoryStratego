@@ -1,5 +1,5 @@
 import { acknowledge } from './game.mjs';
-export const BATTLE_CONTINUE_MS = 5000;
+export const BATTLE_CONTINUE_MS = 3000;
 export function armBattleContinue(m, side, seq, now) {
 	const event = m.events.find(e => e.kind === 'combat' && e.seq === seq);
 	if (!event)

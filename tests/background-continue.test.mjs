@@ -37,7 +37,7 @@ test('server auto-continue needs own rendered-ready opt-in; elapsed sleep progre
 	f.advance(20000);
 	assert.deepEqual(f.m.reveal.ack, [false, false]);
 	f.call(0, 'battle/ready');
-	f.advance(4999);
+	f.advance(2999);
 	assert(!f.m.reveal.ack[0]);
 	f.call(0, 'battle/ready');
 	f.advance(1);
@@ -46,16 +46,16 @@ test('server auto-continue needs own rendered-ready opt-in; elapsed sleep progre
 	assert.equal(f.call(0, 'state').match.battleContinue.armed, false);
 	assert(!JSON.stringify(view(f.m, 1)).includes('continueClocks'));
 });
-test('teacher pause excluded, retries do not restart five seconds, manual ack race idempotent', () => {
+test('teacher pause excluded, retries do not restart three seconds, manual ack race idempotent', () => {
 	const f = fixture();
 	f.call(0, 'battle/ready');
 	f.advance(2000);
 	f.a.call('teacher/pause', {}, 'teacher');
 	f.advance(60000);
-	assert.equal(f.call(0, 'state').match.battleContinue.remainingMs, 3000);
+	assert.equal(f.call(0, 'state').match.battleContinue.remainingMs, 1000);
 	f.call(0, 'battle/ready');
 	f.a.call('teacher/resume', {}, 'teacher');
-	f.advance(2999);
+	f.advance(999);
 	assert(!f.m.reveal.ack[0]);
 	f.call(0, 'ack');
 	f.advance(1);
@@ -76,7 +76,7 @@ test('teacher and unrelated student cannot schedule another player; ended round 
 	f.call(0, 'battle/ready', {
 		side: 1
 	});
-	f.advance(5000);
+	f.advance(3000);
 	assert(f.m.reveal.ack[0] && !f.m.reveal.ack[1]);
 	f.call(1, 'battle/ready');
 	f.a.call('teacher/end', {}, 'teacher');
@@ -88,10 +88,10 @@ test('final capture holds result barrier until both independently scheduled ackn
 	const f = fixture(true);
 	assert.equal(f.m.phase, 'over');
 	f.call(0, 'battle/ready');
-	f.advance(5000);
+	f.advance(3000);
 	assert(f.m.reveal);
 	f.call(1, 'battle/ready');
-	f.advance(5000);
+	f.advance(3000);
 	assert.equal(f.m.reveal, null);
 	assert.equal(f.m.winner, 0);
 });

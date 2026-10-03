@@ -593,7 +593,7 @@ public partial class HistoryGame : MonoBehaviour
 
 		if (!busy && Time.unscaledTime > nextPoll && (teacherMode || token != ""))
 		{
-			nextPoll = Time.unscaledTime + 1;
+			nextPoll = Time.unscaledTime + (!teacherMode && state?.phase == "active" && state.match?.phase == "play" && state.match.battle == null ? (soloMode ? .25f : .5f) : 1f);
 			Send(teacherMode ? (watchId != "" ? "teacher/spectate" : "teacher/state") : "state", new Command { matchId = watchId });
 		}
 	}
@@ -2204,7 +2204,7 @@ public partial class HistoryGame : MonoBehaviour
 			receivedSeq = m.seq;
 		}
 
-		if (motion != null && Time.unscaledTime - motionStart > 1.55f)
+		if (motion != null && Time.unscaledTime - motionStart > (motion.kind == "combat" ? 1.55f : .35f))
 		{
 			if (motion.kind == "combat")
 			{
@@ -2212,6 +2212,7 @@ public partial class HistoryGame : MonoBehaviour
 				localBattleUntil = Time.unscaledTime + 4;
 			}
 
+			if (Application.absoluteURL.Contains("qa=1")) Debug.Log("MOTION_ENDED " + motion.kind + " " + (Time.unscaledTime-motionStart));
 			motion = null;
 		}
 
@@ -2219,6 +2220,7 @@ public partial class HistoryGame : MonoBehaviour
 		{
 			motion = motions.Dequeue();
 			motionStart = Time.unscaledTime;
+			if (Application.absoluteURL.Contains("qa=1")) Debug.Log("MOTION_STARTED " + motion.kind);
 		}
 
 		if (motion != null)
@@ -2276,7 +2278,7 @@ public partial class HistoryGame : MonoBehaviour
 				hints[target.to] = true;
 		}
 
-		float travel = motion == null ? 1 : Mathf.Clamp01((Time.unscaledTime - motionStart - .35f) / 1.2f);
+		float travel = motion == null ? 1 : Mathf.Clamp01((Time.unscaledTime - motionStart - (motion.kind == "combat" ? .35f : 0)) / (motion.kind == "combat" ? 1.2f : .35f));
 		if (motion != null)
 		{
 			b[motion.from] = new PieceView
@@ -2577,7 +2579,7 @@ public partial class HistoryGame : MonoBehaviour
 
 		revealTiming.Observe(key, eligible, readableSeconds);
 		combatClick.Observe(key, manualReady);
-		if (eligible && revealTiming.Elapsed >= 5 && pendingCombatAck == null && combatClick.AutoAdvance(true))
+		if (eligible && revealTiming.Elapsed >= 3 && pendingCombatAck == null && combatClick.AutoAdvance(true))
 		{
 			pendingCombatAck = new Command
 			{
@@ -2699,7 +2701,7 @@ public partial class HistoryGame : MonoBehaviour
 		if (speaker != "")
 			GUI.Label(new Rect(50, quoteBox.y + quoteHeight + 17, 765, creditHeight), "- " + speaker, credit);
 		if (!readOnly && (e.ack[m.side] || elapsed >= 2.3f))
-			GUI.Label(new Rect(30, 518, 805, 30), e.ack[m.side] ? "Waiting for the other player to continue..." : state.phase == "paused" ? "Paused by teacher" : apiStatus != "" ? "Waiting for classroom connection" : m.battleContinue?.supported == true ? "Click the battle panel to continue | auto in " + Math.Ceiling(m.battleContinue.remainingMs / 1000) + "s" : !pageReadable ? "Auto-continue paused - return to the game window" : "Click the battle panel to continue | auto in " + Math.Ceiling(Math.Max(0, 5 - revealTiming.Elapsed)) + "s", new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter });
+			GUI.Label(new Rect(30, 518, 805, 30), e.ack[m.side] ? "Waiting for the other player to continue..." : state.phase == "paused" ? "Paused by teacher" : apiStatus != "" ? "Waiting for classroom connection" : m.battleContinue?.supported == true ? "Click the battle panel to continue | auto in " + Math.Ceiling(m.battleContinue.remainingMs / 1000) + "s" : !pageReadable ? "Auto-continue paused - return to the game window" : "Click the battle panel to continue | auto in " + Math.Ceiling(Math.Max(0, 3 - revealTiming.Elapsed)) + "s", new GUIStyle(GUI.skin.label) { fontSize = 18, alignment = TextAnchor.MiddleCenter });
 		GUI.EndGroup();
 	}
 
