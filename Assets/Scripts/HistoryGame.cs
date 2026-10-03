@@ -244,6 +244,7 @@ public partial class HistoryGame : MonoBehaviour
 
 	Vector2 commanderScroll;
 	int selected = -1, factIndex;
+	readonly FlagEntrySelection flagEntrySelection = new FlagEntrySelection();
 	float nextPoll, nextFact = 20;
 	string[] formation;
 	Fact[] facts = Array.Empty<Fact>();
@@ -1614,7 +1615,7 @@ public partial class HistoryGame : MonoBehaviour
 	int SetupStage(MatchView m) => m.setup?.stage > 0 ? m.setup.stage : 3;
 	string SetupTime(MatchView m) { int seconds=(int)Math.Ceiling(Math.Max(0,SetupRemaining(m))/1000);return (seconds/60)+":"+(seconds%60).ToString("00"); }
 	string SetupTitle(MatchView m) => SetupStage(m)==1?"1 / 3 - PLACE FLAG":SetupStage(m)==2?"2 / 3 - PLACE BOMBS":"3 / 3 - PLACE REMAINING PAWNS";
-	string SetupInstructions(MatchView m) => SetupStage(m)==1?"Choose your Flag, then a square in your four setup rows to move it. Click Next when ready.":SetupStage(m)==2?"Arrange your Bombs and Flag: choose a piece, then an empty square or another piece. Click Next.":"Arrange any pieces by choosing two squares. Earlier Flag and Bomb choices remain yours. Click Ready to lock your army.";
+	string SetupInstructions(MatchView m) => SetupStage(m)==1?(selected >= 0 ? "Choose a highlighted square to move your Flag. Click Next when ready." : "Choose your Flag, then a square in your four setup rows to move it. Click Next when ready."):SetupStage(m)==2?"Arrange your Bombs and Flag: choose a piece, then an empty square or another piece. Click Next.":"Arrange any pieces by choosing two squares. Earlier Flag and Bomb choices remain yours. Click Ready to lock your army.";
 	void DrawSetupPanel(MatchView m)
 	{
 		Panel(new Rect(25, 747, 1150, 138));
@@ -2236,6 +2237,8 @@ public partial class HistoryGame : MonoBehaviour
 	{
 		Track(m);
 		ObserveMovePreview(m);
+		int entryFlag = flagEntrySelection.Select(m.id, m.side, SetupStage(m), m.setup?.started == true, editing && !readOnly, formation);
+		if (entryFlag >= 0) { selected = entryFlag; if (Application.absoluteURL.Contains("qa=1")) Debug.Log("FLAG_PRESELECTED " + entryFlag); }
 		if (tabletop == null)
 			tabletop = new GameObject("Tabletop view").AddComponent<TabletopBoard>();
 		bool swapping = !readOnly && swapPreview != null && swapPreview.Active && SwapContextValid;
@@ -2270,6 +2273,7 @@ public partial class HistoryGame : MonoBehaviour
 
 		bool[] hints = null;
 		int highlight = editing ? selected : -1;
+		if (editing && SetupStage(m) == 1 && selected >= 0) { hints = new bool[100]; for (int k=0;k<40;k++) { int square=m.side==0?60+k:39-k; hints[square]=square!=selected; } }
 		if (!editing && m.selection != null && m.selection.targets != null && !m.blocked)
 		{
 			highlight = m.selection.from;

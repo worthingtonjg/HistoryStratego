@@ -86,7 +86,7 @@ public partial class HistoryGame
         FocusBackground(new Rect(0,0,width,66));
         string status=paused?"Paused by teacher":m.phase=="setup"?teacherMode?"Formation setup (read-only)":m.ready[m.side]?"Waiting for opponent formation":"Step "+SetupStage(m)+" / 3 | "+SetupTime(m):m.phase=="over"?"Match finished":(teacherMode?PlayerName(m,m.turn)+" to move":m.turn==m.side?"Your turn":PlayerName(m,m.turn)+" to move")+(m.turnClock?.enabled==true?" | "+Math.Ceiling(m.turnClock.remainingMs/1000)+"s":"");
         GUI.Label(new Rect(8,3,width-16,30),status,FocusStyle(21));
-        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SpectatorPerspectiveName(m.side):editing?(SetupStage(m)==1?"Place Flag: tap it, then a square. Next when ready.":SetupStage(m)==2?"Place Bombs: move any placed piece. Then Next.":"Arrange all pawns. Ready locks your army."):error!=""?error:SideName(m,m.side),FocusStyle(16));
+        GUI.Label(new Rect(8,33,width-16,30),apiStatus!=""?"Connection unavailable - waiting":teacherMode?"Read-only: "+SpectatorPerspectiveName(m.side):editing?(SetupStage(m)==1?(selected >= 0 ? "Flag selected: tap a highlighted square. Next when ready." : "Place Flag: tap it, then a square. Next when ready."):SetupStage(m)==2?"Place Bombs: move any placed piece. Then Next.":"Arrange all pawns. Ready locks your army."):error!=""?error:SideName(m,m.side),FocusStyle(16));
         FocusLegacy(()=>DrawBattle(m,teacherMode),true);
         if(m.phase=="over"&&m.battle?.kind!="combat")FocusLegacy(()=>DrawEndgame(m,teacherMode));
         if(paused){focusMessages=false;FocusNotice("Paused by teacher","Please wait. Your game resumes when your teacher is ready.");}
