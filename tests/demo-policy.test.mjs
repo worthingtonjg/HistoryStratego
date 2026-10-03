@@ -189,7 +189,7 @@ test('known bomb mission tolerates an unknown adjacent defender', () => {
 	assert.equal(p.candidates[0].to, 30);
 	assert.ok(p.memory.assignment);
 });
-test('known stronger defender blocks mission without dropping discovered target', () => {
+test('known stronger defender may guard the final disarm square without dropping mission', () => {
 	const m = fixture({
 		60: own(), 30: enemy()
 	}, [bomb(30)]);
@@ -198,7 +198,7 @@ test('known stronger defender blocks mission without dropping discovered target'
 	m.seq++;
 	m.events.push({ ...bomb(31, m.seq), defender: '6' });
 	p = plan(m, p.memory);
-	assert.equal(p.memory.assignment, null);
+	assert.ok(p.memory.assignment);
 	assert.equal(p.memory.bombs[30].removed, false);
 	assert.ok(p.candidates.length);
 	m.board[31] = null;

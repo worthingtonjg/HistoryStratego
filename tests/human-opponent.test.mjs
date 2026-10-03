@@ -89,10 +89,10 @@ test('NPC acknowledges only its own reveal after readable delay and waits for hu
 		}
 	});
 	await bot.tick();
-	h.setTime(7999);
+	h.setTime(2999);
 	await bot.tick();
 	assert.deepEqual(h.m.reveal.ack, [false, false]);
-	h.setTime(8000);
+	h.setTime(3000);
 	await bot.tick();
 	assert.deepEqual(h.m.reveal.ack, [true, false]);
 	await bot.tick();
@@ -114,10 +114,10 @@ test('pause resets readable hold; pause during visible selection prevents move',
 	h.setTime(9000);
 	h.setPhase('active');
 	await bot.tick();
-	h.setTime(16000);
+	h.setTime(11999);
 	await bot.tick();
 	assert.deepEqual(h.m.reveal.ack, [false, false]);
-	h.setTime(17000);
+	h.setTime(12000);
 	await bot.tick();
 	assert.deepEqual(h.m.reveal.ack, [true, false]);
 	const j = harness(), other = createOpponent({
@@ -142,7 +142,7 @@ test('policy stall reports once per unchanged sequence and sends no repeated act
 	assert(h.events.some(e => e.status === 'stalled'));
 	assert(h.calls.every(a => a === 'status'));
 });
-test('last-resort legal fallback avoids a policy softlock when a trapped Miner has only a known losing attack', async () => {
+test('strict Miner policy waits when its only legal attack is forbidden', async () => {
 	const h = harness();
 	h.m.board.fill(null);
 	h.m.seq = 3;
@@ -166,9 +166,9 @@ test('last-resort legal fallback avoids a policy softlock when a trapped Miner h
 		}
 	});
 	await bot.tick();
-	assert(h.events.some(e => e.status === 'policy-fallback' && e.reason === 'forced-known-loss'));
-	assert.equal(h.m.seq, 4);
-	assert.equal(h.m.board[60], null);
+	assert(h.events.some(e => e.status === 'stalled'));
+	assert.equal(h.m.seq, 3);
+	assert.equal(h.m.board[60].rank, '3');
 	assert.equal(h.m.winner, -1); // The policy never invents a terminal result.
 });
 for (const alternative of [true, false])

@@ -86,7 +86,10 @@ public class MatchView
 	public int side, turn, seq, winner;
 	public bool[] ready, npc;
 	public PieceView[] board;
-	public Dispatch[] events;
+	public Dispatch[] events, combatHistory;
+	public bool compactHistory;
+	public int lastOwnSquare;
+	public string outcomeReason;
 	public SelectionView selection;
 	public SelectionView[] selectionOptions;
 	public Dispatch battle;
@@ -1052,8 +1055,8 @@ public partial class HistoryGame : MonoBehaviour
 			shownTip = 0;
 		}
 
-		if (m.events != null)
-			foreach (var e in m.events)
+		if (m.combatHistory != null || m.events != null)
+			foreach (var e in m.combatHistory ?? m.events)
 				battleTips.Observe(m.side, e.kind, e.side, e.attacker, e.defender, e.outcome);
 		bool eligible = pageReadable && apiStatus == "" && state.phase == "active" && m.phase == "play" && !DeadlineBlocked(m) && !m.blocked && m.battle?.kind != "combat" && !commanderOpen && motion == null && motions.Count == 0 && presentationMatch == m.id && receivedSeq >= m.seq && Time.unscaledTime >= localBattleUntil && Time.unscaledTime - turnNoticeStart >= 2 && Time.unscaledTime >= tipDismissUntil;
 		int before = battleTips.Active;
@@ -1988,7 +1991,7 @@ public partial class HistoryGame : MonoBehaviour
 				height += body.CalcHeight(new GUIContent(e.text ?? ""), 234) + 42;
 			dispatchScroll = GUI.BeginScrollView(viewport, dispatchScroll, new Rect(0, 0, 240, Mathf.Max(viewport.height, height)));
 			GUI.contentColor = accent;
-			GUI.Label(new Rect(0, 0, 225, 22), events.Length == 0 ? "No moves yet." : "PUBLIC MATCH RECORD", new GUIStyle(body) { fontSize = 12, fontStyle = FontStyle.Bold });
+			GUI.Label(new Rect(0, 0, 225, 22), events.Length == 0 ? "No moves yet." : "RECENT 20 MOVES", new GUIStyle(body) { fontSize = 12, fontStyle = FontStyle.Bold });
 			GUI.contentColor = Color.white;
 			float y = 35;
 			foreach (var e in events)
@@ -2048,7 +2051,7 @@ public partial class HistoryGame : MonoBehaviour
 	{
 		if (!ResultReady(m, teacherView))
 			return;
-		bool won = EndgamePresentation.WinnerKnown(m.phase, m.winner), flag = false, noLegal = false;
+		bool won = EndgamePresentation.WinnerKnown(m.phase, m.winner), flag = m.outcomeReason == "flag", noLegal = m.outcomeReason == "no-legal-moves";
 		if (m.events != null)
 			foreach (var e in m.events)
 			{
@@ -2179,6 +2182,10 @@ public partial class HistoryGame : MonoBehaviour
 		}
 		else if (m.seq > receivedSeq)
 		{
+            var first = Array.Find(m.events ?? Array.Empty<Dispatch>(), e => e.kind == "move" || e.kind == "combat");
+            if (m.compactHistory && first != null && first.seq > receivedSeq + 1) {
+                motions.Clear(); motion = null; localBattle = null; ClearMovePreview("history-gap"); receivedSeq = m.seq;
+            }
 			foreach (var e in m.events)
 				if (e.seq > receivedSeq && (e.kind == "move" || e.kind == "combat"))
 				{
@@ -2463,8 +2470,8 @@ public partial class HistoryGame : MonoBehaviour
 	string Banter(MatchView m, Dispatch target)
 	{
 		string previous = "";
-		if (m.events != null)
-			foreach (var e in m.events)
+		if (m.combatHistory != null || m.events != null)
+			foreach (var e in m.combatHistory ?? m.events)
 			{
 				if (e.kind != "combat" || e.seq > target.seq)
 					continue;

@@ -193,7 +193,7 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 		}, token);
 	}
 	const bot = policyOpponent({
-		command, now, initialMemory, persist, delay: ms => new Promise(r => setTimeout(r, ms))
+		command, now, initialMemory, persist:async memory=>{ authority.call('teacher/npc-memory',{a:joined.player,memory},teacherKey); await persist(memory); }, delay: ms => new Promise(r => setTimeout(r, ms))
 	});
 	const timer = setInterval(async () => {
 		if (stopped || busy || !isActive())

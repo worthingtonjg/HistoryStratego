@@ -14,9 +14,9 @@ test('commander client joins without a name and uses frozen match profiles', () 
 	assert.ok(source.includes("You'll play as "));
 	assert.ok(source.includes('HOW TO PLAY - read while you wait'));
 	assert.ok(!source.includes('state.nickname + " | "'));
-	assert.ok(source.includes(' | Offline'));
+	assert.ok(containsCode(source, '!player.connected?"Offline":player.waiting?"Waiting":"Paired"'));
 	assert.ok(source.includes('same faction to swap'));
-	assert.ok(containsCode(source, '(player.side == 1 ? " | Union" : " | Confederate")'));
+	assert.ok(containsCode(source, '(player.side==1?"UNION":"CONFEDERATE")'));
 	assert.ok(!source.includes('\u00e2\u20ac\u00a2'));
 	assert.ok(!source.includes('Waiting for commander assignment'));
 	assert.ok(containsCode(source, 'if (string.IsNullOrEmpty(state.commander?.id)) state.commander = null;'));

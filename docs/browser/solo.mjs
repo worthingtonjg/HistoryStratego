@@ -10,6 +10,7 @@ export function createSolo({storage=globalThis.sessionStorage,now=()=>performanc
  if(saved&&saved.version!==1)throw Error('This saved solo game is incompatible. Choose New solo game to restart.');
  let clock=saved?.clock??0,last=now(),closed=false,bot,memory=saved?.memory??null;
  const teacherKey=saved?.teacherKey??crypto.randomUUID(),classCode='SOLO';
+ if(saved?.memory) { const m=saved.snapshot?.matches?.find(m=>m.id===saved.memory.matchId); if(m){m.decisionMemory??=[null,null];m.decisionMemory[saved.memory.side]=saved.memory;} }
  const authority=authorityFactory({teacherKey,classCode,snapshot:saved?.snapshot??null,commanderPool:COMMANDERS.filter(c=>/general/i.test(c.role)),now:()=>clock});
  let humanToken=saved?.humanToken,botToken=saved?.botToken;
  const advance=()=>{const stamp=now();if(!closed&&visible())clock+=Math.max(0,Math.min(1000,stamp-last));last=stamp;};

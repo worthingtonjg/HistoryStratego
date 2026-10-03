@@ -54,7 +54,7 @@ export function installMatchLog({ dialog, title, list, closeButton, refreshButto
 			if (dialog.open)
 				dialog.close();
 		}, render: value => {
-			title.textContent = value.title ? 'Match log: ' + value.title : 'Match log';
+			title.textContent = value.title ? 'Recent 20 moves: ' + value.title : 'Recent 20 moves';
 			list.replaceChildren();
 			if (value.loading || value.error) {
 				list.textContent = value.error || 'Loading retained events...';

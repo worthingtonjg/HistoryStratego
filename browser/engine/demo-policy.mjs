@@ -13,7 +13,7 @@ function fresh(m) {
 		version: 2, knowledge: null, spyTarget: null, matchId: m.id, side: m.side, lastSeq: m.seq, bombs: {}, miners: {}, nextMiner: 1, assignment: null, visits: {}
 	};
 }
-function synchronize(m, previous) {
+export function synchronize(m, previous) {
 	const valid = previous?.version === 2 && previous.matchId === m.id && previous.side === m.side;
 	const mem = valid ? structuredClone(previous) : fresh(m), events = [...(m.events || [])].sort((a, b) => a.seq - b.seq);
 	// Track this surviving Miner only, using public movement/combat lineage.
@@ -74,6 +74,7 @@ function synchronize(m, previous) {
 	mem.hunters = Object.fromEntries(Object.entries(mem.miners).filter(([, square]) => hunterSquares.has(square)).map(([id]) => [id, true]));
 	mem.enemySpyEliminated = mem.enemySpyEliminated === true || events.some(e => e.kind === 'combat' && (e.side === m.side ? e.defender === '1' && e.outcome >= 0 : e.attacker === '1' && e.outcome <= 0));
 	mem.knowledge = observeRanks(m, mem.knowledge);
+	mem.recentMoves = [...(valid ? mem.recentMoves || [] : []), ...events.filter(e => e.kind === 'move' && e.side === m.side && (!valid || !mem.recentMoves || e.seq > mem.lastSeq))].slice(-6);
 	mem.lastSeq = m.seq;
 	return mem;
 }
@@ -98,6 +99,8 @@ export function planDemoMoves(state, previous, { restrictMinerAttacks = true, re
 	const m = state.match || state;
 	if (!m?.id || !Array.isArray(m.board) || m.board.length !== 100 || ![0, 1].includes(m.side))
 		throw Error('Own redacted match view required');
+	const saved = m.decisionMemory;
+	if (saved?.matchId === m.id && saved.side === m.side && saved.lastSeq <= m.seq && (!previous || previous.matchId !== m.id || previous.side !== m.side || saved.lastSeq > previous.lastSeq && previous.lastSeq < ((m.events || []).find(e=>['move','combat'].includes(e.kind))?.seq ?? m.seq+1)-1)) previous = saved;
 	const memory = synchronize(m, previous), known = Object.values(memory.bombs).filter(b => !b.removed).sort((a, b) => a.discoveredSeq - b.discoveredSeq || a.square - b.square);
 	const hunters = new Set(Object.keys(memory.hunters).map(id => memory.miners[id]));
 	const knownSquares = new Set(known.map(b => b.square));
@@ -111,7 +114,11 @@ export function planDemoMoves(state, previous, { restrictMinerAttacks = true, re
 		const rank = observed.get(j);
 		return rank && !['B', 'F', '1', '2'].includes(rank);
 	});
-	const bombRoute = (from, to) => route(m.board, from, to, safe) || route(m.board, from, to, missionSafe);
+	const minerThreat = (to, from) => neighbors(to).some(at => at !== from && m.board[at]?.side === 1 - m.side && Number(observed.get(at)) >= 3);
+	const bombRoute = (from, to) => {
+		const allowed = at => at === to || hunters.has(from) || !minerThreat(at, from);
+		return route(m.board, from, to, at => allowed(at) && (at === to || safe(at))) || route(m.board, from, to, at => allowed(at) && (at === to || missionSafe(at)));
+	};
 	let assignment = memory.assignment, path = null;
 	if (assignment && memory.miners[assignment.minerId] !== undefined && known.some(b => b.square === assignment.bombSquare))
 		path = bombRoute(memory.miners[assignment.minerId], assignment.bombSquare);
@@ -238,6 +245,9 @@ export function planDemoMoves(state, previous, { restrictMinerAttacks = true, re
 				const minerAttack = p.rank === '3' && q && ['1', '2', 'B'].includes(knownRanks.get(to));
 				if (restrictMinerAttacks && p.rank === '3' && q && !minerAttack && !huntAttack) break;
 				if (restrictMarshalAttacks && p.rank === '10' && q && (['1', 'B'].includes(knownRanks.get(to)) || knownRanks.get(to) === '10' && !memory.enemySpyEliminated)) break;
+				// Hard policy gate applies before every preferred/fallback/emergency pool.
+				// Scouts cannot kill a Miner: rank 2 loses to defending rank 3, even along an open lane.
+				if (restrictMinerAttacks && p.rank === '3' && known.length && !huntStep && !(q && knownRanks.get(to) === 'B') && minerThreat(to, from)) { if (q) break; continue; }
 				const assigned = assignment && memory.miners[assignment.minerId] === from;
 				const special = ['1', '3'].includes(p.rank), mission = p.rank === '1' ? memory.spyTarget !== null : assigned || hunters.has(from);
 				const returnPath = returnPaths.get(from);
@@ -254,7 +264,7 @@ export function planDemoMoves(state, previous, { restrictMinerAttacks = true, re
 					continue;
 				}
 				const outcome = knownOutcome(p.rank, knownRanks.get(to));
-				const unsafeMiner = p.rank === '3' && !huntStep && !(minerAttack || assigned && path?.[1] === to ? missionSafe(to) : safe(to)), unsafeSpy = p.rank === '1' && !spySafe(to, from, outcome === 1 && knownRanks.get(to) === '10' ? to : -1);
+				const unsafeMiner = p.rank === '3' && !huntStep && !(q && knownRanks.get(to) === 'B') && !(minerAttack || assigned && path?.[1] === to ? missionSafe(to) : safe(to)), unsafeSpy = p.rank === '1' && !spySafe(to, from, outcome === 1 && knownRanks.get(to) === '10' ? to : -1);
 				fallback.push({
 					from, to, score: (outcome < 0 ? -100 - Number(p.rank) : 0) - (unsafeMiner || unsafeSpy ? 30 : 0), reason: outcome < 0 ? 'forced-known-loss' : 'forced-safety-fallback'
 				});
@@ -274,7 +284,7 @@ export function planDemoMoves(state, previous, { restrictMinerAttacks = true, re
 						break;
 					continue;
 				}
-				const pressure = attackPressure(m.board, m.side, from, to, approaches, m.events);
+				const pressure = attackPressure(m.board, m.side, from, to, approaches, memory.recentMoves);
 				let score = pressure.score - Math.min(memory.visits[to] || 0, 4) * .5 + (q ? (p.rank === '3' ? 29 : p.rank === '2' ? 26 : p.rank === '1' ? -5 : 22) + (outcome > 0 ? 18 : 0) + (knownRanks.get(to) === 'F' ? 100 : 0) : 0);
 				let reason = 'ordinary';
 				if (huntStep) { score += q ? 1200 : 400; reason = 'miner-back-row-hunt'; }

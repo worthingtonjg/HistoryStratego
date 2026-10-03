@@ -1,4 +1,5 @@
 import {randomBytes} from './random.mjs';
+import { combatEvents, compactHistory } from './game.mjs';
 import { generateFormation } from './formation.mjs';
 import { sendPreset, presetView } from './emotes.mjs';
 import { armBattleContinue, tickBattleContinue, battleContinueView } from './battle-continue.mjs';
@@ -26,13 +27,14 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		}
 		for (const m of snapshot.matches)
 			matches.set(m.id, {
-				...m, requests: new Map(m.requests || []), reveal: m.reveal ? m.events.find(e => e.kind === 'combat' && e.seq === m.reveal.seq) : null
+				...m, requests: new Map(m.requests || []), reveal: m.reveal ? combatEvents(m).find(e => e.seq === m.reveal.seq) : null
 			});
 		for (const m of snapshot.archives || [])
 			archives.set(m.id, {
-				...m, requests: new Map(m.requests || []), reveal: m.reveal ? m.events.find(e => e.kind === 'combat' && e.seq === m.reveal.seq) : null
+				...m, requests: new Map(m.requests || []), reveal: m.reveal ? combatEvents(m).find(e => e.seq === m.reveal.seq) : null
 			});
 	}
+	for(const m of [...matches.values(),...archives.values()]) compactHistory(m);
 	const auth = t => {
 		const p = tokens.get(t);
 		if (!p)
@@ -63,7 +65,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			tick();
 		const m = [...archives.values()].find(m => {
 			const side = m.players.indexOf(p.id);
-			return !m.roundEnded && side >= 0 && m.events.some(e => e.kind === 'combat' && !e.ack[side]);
+			return !m.roundEnded && side >= 0 && combatEvents(m).some(e => e.kind === 'combat' && !e.ack[side]);
 		}) || find(p);
 		return {
 			classCode, phase, presence, player: p.id, nickname: p.name, commander: p.commander || null, paired: isPaired(p), match: m ? {
@@ -78,7 +80,18 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			id: m.id, players: m.players, playerNames: m.playerNames, phase: m.phase, winner: m.winner, captures: captureTotals(m)
 		}))
 	});
+	const pruneArchives = () => {
+        const resolved=[...archives.values()].filter(m=>!m.archiveSummary && !combatEvents(m).some(e=>e.ack?.some(v=>!v)));
+        for(const m of resolved.slice(0,Math.max(0,resolved.length-40))) {
+            compactHistory(m);
+            // Preserve every result. Only old, fully reviewed board/controller detail is retired.
+            const {id,players,playerNames,commanders,phase,turn,seq,winner,ready,roundEnded,outcomeReason}=m;
+            archives.set(id,{id,players,playerNames,commanders,phase,turn,seq,winner,ready,roundEnded,outcomeReason,
+                captures:captureTotals(m),archived:true,archiveSummary:true,events:[],combats:[],reveal:null,requests:new Map()});
+        }
+    };
 	const tick = () => {
+        pruneArchives();
 		for (const m of matches.values()) {
 			tickBattleContinue(m, phase, now());
 			tickSetup(m, phase, now());
@@ -89,7 +102,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		tick, clockView: m => ({
 			setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), ...presetView(emoteRecords, m, -1, now())
 		}),
-		exportSnapshot: () => ({phase, order, pairedCount, presence, perspectives:[...perspectiveChoices], removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...m,requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...m,requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices: perspectiveChoices,
+		exportSnapshot: () => ({phase, order, pairedCount, presence, perspectives:[...perspectiveChoices], removedStudents:[...removedStudents], revokedTokens:[...revokedTokens], emotes:[...emoteRecords], students:[...tokens].map(([token,p])=>({...p,token})), matches:[...matches.values()].map(m=>({...compactHistory(m),requests:[...m.requests]})), archives:[...archives.values()].map(m=>({...compactHistory(m),requests:[...m.requests]}))}), teacherKey, classCode, students, matches, revokedTokens, __perspectiveChoices: perspectiveChoices,
 		call(route, b = {}, token = '') {
 			if (revokedTokens.has(token)) {
 				if (route === 'state' || route === 'join') return {classCode, phase:'removed', removed:true, match:null, paired:false};
@@ -97,7 +110,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			}
 			if (route === 'emote') {
 				const p = auth(token), m = find(p);
-				if (!m || b.matchId !== m.id || phase !== 'active' || (m.phase !== 'play' && !m.reveal && !m.events.some(e => e.kind === 'combat' && e.ack?.some(ack => !ack))) || setupBlocked(m) || m.turnClock?.notice)
+				if (!m || b.matchId !== m.id || phase !== 'active' || (m.phase !== 'play' && !m.reveal && !combatEvents(m).some(e => e.kind === 'combat' && e.ack?.some(ack => !ack))) || setupBlocked(m) || m.turnClock?.notice)
 					throw Error('Messages are available during active play');
 				sendPreset(emoteRecords, m, m.players.indexOf(p.id), b.emoteId, now());
 				return state(p, false);
@@ -148,7 +161,12 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 			if (route.startsWith('teacher/')) {
 				teacher(token);
 				const action = route.slice(8);
-				if (action === 'npc') {
+				if (action === 'npc-memory') {
+                    const p=students.get(b.a),m=p&&find(p), memory=b.memory;
+                    if(!p?.npc||!m||memory?.matchId!==m.id||memory.side!==m.players.indexOf(p.id)||memory.lastSeq!==m.seq) throw Error('Stale NPC memory');
+                    m.decisionMemory ??= [null,null]; m.decisionMemory[memory.side]=structuredClone(memory);
+                }
+                else if (action === 'npc') {
                     const p=students.get(b.a);if(!p)throw Error('Student not found');p.npc=true;
                 }
                 else if (action === 'setup-npc') {

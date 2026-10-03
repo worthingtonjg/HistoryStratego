@@ -66,7 +66,7 @@ public static class AutoSelectionPolicy
 		});
 		// Identity survives consecutive moves and is removed on a recorded capture.
 		// Another own piece later occupying the same square has a different identity.
-		if (lastIdentity != null)
+		if (!match.compactHistory && lastIdentity != null)
 		{
 			foreach (var position in positions)
 			{
@@ -78,6 +78,7 @@ public static class AutoSelectionPolicy
 			}
 		}
 
+		if (match.compactHistory && candidates.Remove(match.lastOwnSquare)) candidates.Insert(0, match.lastOwnSquare);
 		return candidates.ToArray();
 	}
 

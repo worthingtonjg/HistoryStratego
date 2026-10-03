@@ -1,3 +1,4 @@
+import { synchronize } from '../tools/demo-policy.mjs';
 import { randomInt, randomUUID } from 'node:crypto';
 export const COUNTS = {
 	F: 1, B: 6, 1: 1, 2: 8, 3: 5, 4: 4, 5: 4, 6: 4, 7: 3, 8: 2, 9: 1, 10: 1
@@ -30,6 +31,33 @@ export function captureTotals(m) {
  if (Array.isArray(m.captures) && m.captures.length === 2) return [...m.captures];
  if (!m.ready?.every(Boolean)) return [0, 0];
  return [0, 1].map(side => 40 - m.board.filter(p => p?.side === 1 - side).length);
+}
+// Combat count is bounded by the original 80 pieces: every combat removes at least one.
+// Keep these records independently of the rolling display so delayed review, tips and banter survive.
+export function combatEvents(m) {
+ const records = new Map((m.combats || []).map(e => [e.seq, e]));
+ for (const e of m.events || []) if (e.kind === 'combat' && !records.has(e.seq)) records.set(e.seq,e);
+ m.combats = [...records.values()].sort((a,b)=>a.seq-b.seq);
+ for (let i=0;i<(m.events || []).length;i++) if(m.events[i].kind==='combat') m.events[i]=records.get(m.events[i].seq);
+ if(m.reveal) m.reveal=records.get(m.reveal.seq) || m.reveal;
+ return m.combats;
+}
+export function compactHistory(m) {
+ if(m.archiveSummary) return m;
+ combatEvents(m);
+ m.decisionMemory ??= [null,null];
+ for(const side of [0,1]) {
+  // Only a redacted projection enters the observation reducer. Seed legacy timeout memory before trimming.
+  const prior=m.decisionMemory[side] || m.timeoutMemory?.[side];
+  if(!prior || prior.lastSeq!==m.seq) m.decisionMemory[side]=synchronize(view(m,side,{skipHistory:true}),prior);
+ }
+ m.outcomeReason ||= m.events.some(e=>e.text==='No legal moves remain.') ? 'no-legal-moves' : m.combats.some(e=>e.defender==='F' && e.outcome>0) ? 'flag' : '';
+ const moves=m.events.filter(e=>['move','combat'].includes(e.kind));
+ const start=moves.length>20 ? moves.at(-20).seq : -Infinity;
+ m.events=m.events.filter(e=>e.seq>=start);
+ m.historyVersion=1;
+ while(m.requests.size>128) m.requests.delete(m.requests.keys().next().value);
+ return m;
 }
 export function setup(m, side, ranks) {
 	check(m.phase === 'setup' && !m.ready[side], 'Setup is locked');
@@ -74,13 +102,14 @@ export function resolve(a, d) {
 	return Math.sign(Number(a) - Number(d));
 }
 export function move(m, side, from, to, seq, requestId) {
+	compactHistory(m);
 	check(typeof requestId === 'string' && requestId.length > 0 && requestId.length < 100, 'Request ID required');
 	const key = side + ':' + requestId;
 	if (m.requests.has(key)) {
 		check(m.requests.get(key) === JSON.stringify([from, to, seq]), 'Request ID reused');
 		return;
 	}
-	check(!m.events.some(e => e.kind === 'combat' && !e.ack[side]), 'Review your pending combat first');
+	check(!combatEvents(m).some(e => e.kind === 'combat' && !e.ack[side]), 'Review your pending combat first');
 	check(!m.reveal, 'Both players must acknowledge combat');
 	check(m.phase === 'play', 'Match is not active');
 	check(seq === m.seq, 'Stale position: refresh and retry');
@@ -127,6 +156,7 @@ export function move(m, side, from, to, seq, requestId) {
 			seq: m.seq, text: 'No legal moves remain.'
 		});
 	}
+	compactHistory(m);
 }
 export function destinations(m, side, from) {
 	return Array.from({
@@ -138,7 +168,7 @@ export function destinations(m, side, from) {
 const selectionCache = new WeakMap();
 // Reuse the authoritative movement rules once per position. No enemy ranks leave view().
 export function selectionOptions(m, side) {
- if (m.phase !== 'play' || m.archived || m.reveal || m.turn !== side || m.events.some(e => e.kind === 'combat' && !e.ack[side])) return [];
+ if (m.phase !== 'play' || m.archived || m.reveal || m.turn !== side || combatEvents(m).some(e => e.kind === 'combat' && !e.ack[side])) return [];
  let cached = selectionCache.get(m);
  if (!cached || cached.seq !== m.seq || cached.side !== side) {
   const options = [];
@@ -151,7 +181,7 @@ export function selectionOptions(m, side) {
  return cached.options;
 }
 export function select(m, side, from, seq) {
-	check(!m.events.some(e => e.kind === 'combat' && !e.ack[side]), 'Review your pending combat first');
+	check(!combatEvents(m).some(e => e.kind === 'combat' && !e.ack[side]), 'Review your pending combat first');
 	check(!m.reveal && m.phase === 'play' && m.turn === side, 'Selection is unavailable');
 	check(seq === m.seq, 'Stale selection');
 	check(Number.isInteger(from) && m.board[from]?.side === side && !['B', 'F'].includes(m.board[from].rank), 'Select your movable piece');
@@ -160,9 +190,9 @@ export function select(m, side, from, seq) {
 	};
 }
 export function acknowledge(m, side, seq) {
-	const event = m.events.find(e => e.seq === seq && e.kind === 'combat');
+	const event = combatEvents(m).find(e => e.seq === seq && e.kind === 'combat');
 	check(event, 'Combat event not found');
-	const older = m.events.find(e => e.kind === 'combat' && !e.ack[side]);
+	const older = combatEvents(m).find(e => e.kind === 'combat' && !e.ack[side]);
 	check(event.ack[side] || older === event, 'Acknowledge combat in order');
 	event.ack[side] = true;
 	if (m.reveal === event && event.ack.every((v, i) => v || event.released[i]))
@@ -178,9 +208,13 @@ export function releaseReveal(m, side, seq) {
 	if (m.reveal.ack.every((v, i) => v || m.reveal.released[i]))
 		m.reveal = null;
 }
-export function view(m, side, { spectator = false } = {}) {
-	const battle = spectator ? m.reveal : m.events.find(e => e.kind === 'combat' && !e.ack[side]) || m.reveal;
+export function view(m, side, { spectator = false, skipHistory = false } = {}) {
+	if(!skipHistory && (!m.historyVersion || m.decisionMemory?.some(mem=>mem?.lastSeq!==m.seq))) m=compactHistory(structuredClone(m));
+	const battle = spectator ? m.reveal : combatEvents(m).find(e => e.kind === 'combat' && !e.ack[side]) || m.reveal;
 	return {
+		compactHistory: !skipHistory, lastOwnSquare: m.board.findIndex(p=>p && p.side===side && p.id===m.history[side]?.at(-1)?.id),
+        outcomeReason:m.outcomeReason || '', combatHistory:combatEvents(m).map(({seq,kind,side,from,to,attacker,defender,outcome,text})=>({seq,kind,side,from,to,attacker,defender,outcome,text})),
+        decisionMemory:skipHistory ? undefined : structuredClone(m.decisionMemory?.[side] || null),
 		id: m.id, phase: m.archived ? 'over' : m.phase, turn: m.turn, seq: m.seq, winner: m.winner, side, ready: m.ready, blocked: !!m.reveal, battle: battle ? {
 			...battle
 		} : null, selection: m.selection && (spectator || side === m.turn) ? m.selection : null, selectionOptions: spectator ? [] : selectionOptions(m, side), board: m.board.map(p => p ? {

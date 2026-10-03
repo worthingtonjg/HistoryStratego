@@ -1,3 +1,4 @@
+import { combatEvents } from './game.mjs';
 import { view, legal, move } from './game.mjs';
 import { planDemoMoves } from '../tools/demo-policy.mjs';
 export const TURN_MS = 30000, ANNOUNCE_MS = 3000, TURN_BANNER_MS = 2000;
@@ -17,7 +18,7 @@ export function tickTurn(m, phase, now, npc = false) {
 	if (!m.timedTurns)
 		return;
 	let c = m.turnClock;
-	const eligible = phase === 'active' && m.phase === 'play' && !setupBlocked(m) && !m.reveal && !m.events.some(e => e.kind === 'combat' && !e.ack[m.turn]);
+	const eligible = phase === 'active' && m.phase === 'play' && !setupBlocked(m) && !m.reveal && !combatEvents(m).some(e => e.kind === 'combat' && !e.ack[m.turn]);
 	if (!c || c.seq !== m.seq)
 		c = m.turnClock = {
 			seq: m.seq, remaining: TURN_MS, banner: TURN_BANNER_MS, notice: 0, at: now, eligible: false
@@ -55,6 +56,7 @@ export function tickTurn(m, phase, now, npc = false) {
 	// Policy sees exactly the participant projection, never the authoritative board.
 	const plan = planDemoMoves(view(m, side), m.timeoutMemory[side], { restrictMinerAttacks: npc, restrictMarshalAttacks: npc });
 	m.timeoutMemory[side] = plan.memory;
+	m.decisionMemory ??= [null,null]; m.decisionMemory[side] = structuredClone(plan.memory);
 	const choice = [...plan.candidates, ...plan.fallback, ...plan.emergency].find(p => legal(m, side, p.from, p.to));
 	if (!choice) {
 		// Classic no-legal-move defeat, never a fabricated skipped turn.

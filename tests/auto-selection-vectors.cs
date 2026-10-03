@@ -16,6 +16,7 @@ public class Dispatch
 
 public class MatchView
 {
+ public bool compactHistory; public int lastOwnSquare;
 	public int side;
 	public PieceView[] board = new PieceView[100];
 	public Dispatch[] events = new Dispatch[0];

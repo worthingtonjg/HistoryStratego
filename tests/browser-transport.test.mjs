@@ -405,12 +405,12 @@ test('legacy token migrates only into its exact existing classroom and resumes t
  } finally {teacher.close();student.close();}
  });
 
-test('large real match history checkpoint saves and recovers without truncating moves or student identity',async()=>{
+test('large real match history checkpoint compacts display history and recovers sequence and student identity',async()=>{
  const {move}=await import('../browser/engine/game.mjs');const env=environment(),teacher=await connectClassroom({role:'teacher',teacherAccess:acceptUnityTeacherGate(),sdk:env.sdk('large-teacher')});let recovered;
  try{const seats=[];for(let i=0;i<2;i++)seats.push(await teacher.request('join',{classCode:teacher.code}));await teacher.request('teacher/start');const m=[...teacher.authority.matches.values()][0];m.phase='play';m.ready=[true,true];m.setupClocks=null;m.timedTurns=false;m.board.fill(null);for(const[i,side,rank]of[[72,0,'6'],[27,1,'6'],[99,0,'F'],[0,1,'F']])m.board[i]={id:String(i),side,rank};
  for(let n=0;n<1200;n++){const side=n%2,k=Math.floor(n/2),a=side===0?72:27,b=side===0?62:37;move(m,side,k%2?b:a,k%2?a:b,m.seq,'large-'+n);}
- const serialized=JSON.stringify(teacher.authority.exportSnapshot());assert(serialized.length>131072);assert.throws(()=>String.fromCharCode(...new TextEncoder().encode(serialized)),RangeError);
- await teacher.request('teacher/state');const record=env.store.get('history.teacher.'+teacher.code);assert(record.length>131072);const key=await crypto.subtle.importKey('raw',Buffer.from(teacher.recovery,'hex'),{name:'AES-GCM'},false,['decrypt']);const decoded=await open(key,JSON.parse(record));assert.equal(decoded.snapshot.matches[0].events.length,1200);assert(!record.includes('large-1199'));
- recovered=await connectClassroom({role:'recover',teacherAccess:acceptUnityTeacherGate(),code:teacher.code,recovery:teacher.recovery,sdk:env.sdk('large-recovery')});assert.equal(recovered.authority.matches.get(m.id).events.length,1200);assert.equal(recovered.authority.matches.get(m.id).seq,1200);const restored=await recovered.request('state',{},seats[0].token);assert.equal(restored.player,seats[0].player);assert.equal(restored.phase,'paused');assert(restored.match.board.filter(p=>p&&p.side!==restored.match.side).every(p=>p.rank==='?'));
+ const serialized=JSON.stringify(teacher.authority.exportSnapshot());assert(serialized.length<30000);
+ await teacher.request('teacher/state');const record=env.store.get('history.teacher.'+teacher.code);assert(record.length<45000);const key=await crypto.subtle.importKey('raw',Buffer.from(teacher.recovery,'hex'),{name:'AES-GCM'},false,['decrypt']);const decoded=await open(key,JSON.parse(record));assert.equal(decoded.snapshot.matches[0].events.length,20);assert(!record.includes('large-1199'));
+ recovered=await connectClassroom({role:'recover',teacherAccess:acceptUnityTeacherGate(),code:teacher.code,recovery:teacher.recovery,sdk:env.sdk('large-recovery')});assert.equal(recovered.authority.matches.get(m.id).events.length,20);assert.equal(recovered.authority.matches.get(m.id).seq,1200);const restored=await recovered.request('state',{},seats[0].token);assert.equal(restored.player,seats[0].player);assert.equal(restored.phase,'paused');assert(restored.match.board.filter(p=>p&&p.side!==restored.match.side).every(p=>p.rank==='?'));
  }finally{teacher.close();recovered?.close();}
 });
