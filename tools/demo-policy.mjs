@@ -17,8 +17,9 @@ function synchronize(m, previous) {
 	const valid = previous?.version === 2 && previous.matchId === m.id && previous.side === m.side;
 	const mem = valid ? structuredClone(previous) : fresh(m), events = [...(m.events || [])].sort((a, b) => a.seq - b.seq);
 	// Track this surviving Miner only, using public movement/combat lineage.
-	const hunterSquares = new Set(valid ? Object.keys(mem.hunters || {}).map(id => mem.miners[id]).filter(i => i !== undefined) : []);
-	for (const e of events.filter(e => !valid || e.seq > mem.lastSeq)) {
+	const hunterMemoryValid = valid && mem.hunters !== undefined;
+	const hunterSquares = new Set(hunterMemoryValid ? Object.keys(mem.hunters || {}).map(id => mem.miners[id]).filter(i => i !== undefined) : []);
+	for (const e of events.filter(e => !hunterMemoryValid || e.seq > mem.lastSeq)) {
 		if (e.side === m.side && ['move', 'combat'].includes(e.kind)) {
 			const hunter = hunterSquares.delete(e.from);
 			if (e.kind === 'move' || e.outcome > 0) {
