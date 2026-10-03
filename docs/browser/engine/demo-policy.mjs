@@ -1,3 +1,4 @@
+import { attackApproaches, attackPressure } from './pressure-policy.mjs';
 import { reachableFrontier, quietMoveMobility } from './mobility-policy.mjs';
 import { observeRanks, knownOutcome } from './public-knowledge.mjs';
 // Pure next-session policy. Inputs must be this participant's own redacted view.
@@ -187,8 +188,9 @@ export function planDemoMoves(state, previous) {
 		if (choices.length)
 			returnPaths.set(from, choices[0]);
 	}
-	const enemies = m.board.flatMap((p, i) => p && p.side !== m.side && !knownSquares.has(i) ? [i] : []), nearest = i => enemies.length ? Math.min(...enemies.map(j => distance(i, j))) : 0, candidates = [], fallback = [], emergency = [];
+	const candidates = [], fallback = [], emergency = [];
 	const reachable = reachableFrontier(m.board, m.side);
+	const approaches = attackApproaches(m.board, m.side, knownSquares);
 	let boundaryBlocked = 0;
 	for (let from = 0; from < 100; from++) {
 		const p = m.board[from];
@@ -238,7 +240,8 @@ export function planDemoMoves(state, previous) {
 						break;
 					continue;
 				}
-				let score = (nearest(from) - nearest(to)) * 2 + (m.side === 0 ? Math.floor(from / 10) - y : y - Math.floor(from / 10)) * .4 - (memory.visits[to] || 0) * 1.4 + (q ? (p.rank === '3' ? 13 : p.rank === '2' ? 10 : p.rank === '1' ? -5 : 7) : 0);
+				const pressure = attackPressure(m.board, m.side, from, to, approaches, m.events);
+				let score = pressure.score - Math.min(memory.visits[to] || 0, 4) * .5 + (q ? (p.rank === '3' ? 29 : p.rank === '2' ? 26 : p.rank === '1' ? -5 : 22) + (outcome > 0 ? 18 : 0) + (knownRanks.get(to) === 'F' ? 100 : 0) : 0);
 				let reason = 'ordinary';
 				if (returnPath?.[1] === to) {
 					score += 1500;
@@ -267,7 +270,7 @@ export function planDemoMoves(state, previous) {
 				score += mobility.adjustment;
 				// Unassigned miners have no target/route bonus and never attack another known bomb.
 				candidates.push({
-					from, to, score, reason, mobility: mobility.kind
+					from, to, score, reason, mobility: mobility.kind, pressure
 				});
 				if (q)
 					break;

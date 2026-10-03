@@ -13,7 +13,7 @@ for (const f of files) {
 	}
 	await writeFile(out + '/' + f + '.mjs', s);
 }
-for (const f of ['demo-policy', 'mobility-policy', 'public-knowledge'])
+for (const f of ['demo-policy', 'mobility-policy', 'public-knowledge', 'pressure-policy'])
 	await writeFile(out + '/' + f + '.mjs', await readFile('tools/' + f + '.mjs'));
 await writeFile(out + '/formation.mjs', await readFile('web/formation.mjs'));
 let s = await readFile('server/server.mjs', 'utf8');
