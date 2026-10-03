@@ -8,7 +8,14 @@ const GAME_ID = 'zN6Oyc9pDGlt60CITwGe';
 const enc = new TextEncoder(), dec = new TextDecoder();
 const hex = a => Array.from(new Uint8Array(a), x => x.toString(16).padStart(2, '0')).join('');
 const bytes = s => Uint8Array.from(s.match(/../g) || [], x => parseInt(x, 16));
-const b64 = a => btoa(String.fromCharCode(...new Uint8Array(a)));
+// Bound function arguments: ciphertext/checkpoints grow with classroom history.
+// Spreading an entire payload into fromCharCode overflows the browser call stack.
+const b64 = a => {
+	const data = new Uint8Array(a), parts = [];
+	for (let i = 0; i < data.length; i += 8192)
+		parts.push(String.fromCharCode(...data.subarray(i, i + 8192)));
+	return btoa(parts.join(''));
+};
 const un64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
 const random = () => hex(crypto.getRandomValues(new Uint8Array(32)));
 const sleep = ms => new Promise(r => setTimeout(r, ms));
