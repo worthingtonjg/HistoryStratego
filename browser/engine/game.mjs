@@ -49,7 +49,7 @@ export function compactHistory(m) {
  for(const side of [0,1]) {
   // Only a redacted projection enters the observation reducer. Seed legacy timeout memory before trimming.
   const prior=m.decisionMemory[side] || m.timeoutMemory?.[side];
-  if(!prior || prior.lastSeq!==m.seq) m.decisionMemory[side]=synchronize(view(m,side,{skipHistory:true}),prior);
+  m.decisionMemory[side]=!prior || prior.lastSeq!==m.seq || !prior.recentMoves || !prior.hunters ? synchronize(view(m,side,{skipHistory:true}),prior) : prior;
  }
  m.outcomeReason ||= m.events.some(e=>e.text==='No legal moves remain.') ? 'no-legal-moves' : m.combats.some(e=>e.defender==='F' && e.outcome>0) ? 'flag' : '';
  const moves=m.events.filter(e=>['move','combat'].includes(e.kind));

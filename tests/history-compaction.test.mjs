@@ -60,3 +60,11 @@ for(const side of [0,1])test('Miner safety side '+side+' survives timeout fallba
  for(let i=0;i<80;i++) {const p=plan(r.m,memory);memory=p.memory;const c=p.candidates[0];assert(c);const isBomb=c.to===r.flip(20);if(!isBomb)assert.notEqual(Math.abs(c.to%10-r.flip(31)%10)+Math.abs(Math.floor(c.to/10)-Math.floor(r.flip(31)/10)),1);const pawn=r.m.board[c.from];r.m.board[c.from]=null;r.m.board[c.to]=pawn;r.m.events.push({kind:isBomb?'combat':'move',side,seq:++r.m.seq,from:c.from,to:c.to,...(isBomb?{attacker:'3',defender:'B',outcome:1}:{})});if(isBomb){arrived=true;break;}}
  assert(arrived,'safe detour reaches Bomb');
 });
+test('same-sequence legacy timeout memory is adopted before trimming and seeds old quiet-move memory',()=>{
+ const{m,full,receipts}=longMatch(40);m.events=full;m.requests=new Map(receipts);delete m.decisionMemory;
+ for(let i=0;i<22;i++)m.events.push({kind:'combat',side:0,seq:++m.seq,from:81,to:80,attacker:'2',defender:'4',outcome:0,ack:[true,true],released:[false,false]});
+ m.timeoutMemory=[0,1].map(side=>plan(view(m,side,{skipHistory:true})).memory);
+ const expected=m.timeoutMemory.map(x=>structuredClone(x));for(const memory of m.timeoutMemory)delete memory.recentMoves;
+ compactHistory(m);assert.equal(m.events.length,20);
+ for(const side of [0,1]){assert(m.decisionMemory[side]);assert.deepEqual(m.decisionMemory[side].recentMoves,expected[side].recentMoves);assert.equal(m.decisionMemory[side].recentMoves.length,6);assert.deepEqual(m.decisionMemory[side].hunters,expected[side].hunters);}
+});
