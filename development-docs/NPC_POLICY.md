@@ -43,3 +43,10 @@ Marshals pursue reachable known ranks 2-9 and avoid attacking known Spies and Bo
 ## Initial formation
 
 Full shuffle places all five Miners randomly in available back-row cells after the Flag, its adjacent Bombs, and front-row Scouts. Phase-three fill prioritizes remaining Miners in available back-row cells, preserving every already occupied cell. If insufficient spaces remain, excess Miners use other empty cells. Explicit remaining-piece shuffle preserves Flag/Bombs and reapplies Scout/ Miner row preferences. Timeout fill uses the same preserve-existing-choices policy.
+
+
+## NPC duel pacing and earned Miner hunt
+
+When both seats are NPCs, each controller waits at least one second after observing its own actionable turn before deciding. The existing 300 ms thinking time and polling cadence remain, so real intervals can exceed one second. Human-versus-NPC play does not gain this delay. Combat must clear both existing acknowledgments before the next gap starts. Ticks are serialized, decisions preserve their original sequence and match ID, and acknowledgments retain the reviewed battle ID.
+
+Exception to the Miner attack whitelist: a specific surviving Miner that actually defeats a Bomb in either of the enemy's last two rows gains permission to attack any opposing piece on the enemy back row, including unknown pieces, stronger pieces and a Flag. The trigger comes solely from observed combat, and the permission follows that Miner's public movement. Death removes it; another Miner occupying the same square does not inherit it. Other Miners and targets outside the enemy back row retain the normal attack restrictions. Reconnect preserves/reconstructs this history without consulting hidden ranks.

@@ -28,10 +28,10 @@ export function opponentAction(state) {
 		return 'wait-turn-banner';
 	return m.turn === m.side ? 'move' : 'wait-human-turn';
 }
-function policyOpponent({ command, delay, now = Date.now, emit = () => {
+export function policyOpponent({ command, delay, now = Date.now, emit = () => {
 }, initialMemory = null, persist = async () => {
 } }) {
-	let round = '', firstMove = true;
+	let round = '', firstMove = true, ticking = false, duelReady = '', duelUntil = 0;
 	let memory = initialMemory, review = '', reviewStarted = 0, cooldown = 0, stalled = '', stalledReason = '', lastStatus = '';
 	const report = (status, extra = {}) => {
 		const text = JSON.stringify({
@@ -45,7 +45,11 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 	return {
 		pause() {
 			review = '';
+			duelReady = '';
 		}, async tick() {
+			if (ticking) return;
+			ticking = true;
+			try {
 			const state = await command('status'), m = state?.match, action = opponentAction(state), key = m ? m.id + ':' + m.seq : '';
 			if (m && round !== m.id) {
 				round = m.id;
@@ -54,6 +58,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 				stalled = '';
 				review = '';
 			}
+			if (action !== 'move') duelReady = '';
 			if (action === 'review-own-combat') {
 				const battleKey = m.id + ':' + m.battle.seq;
 				if (review !== battleKey) {
@@ -67,7 +72,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 					return;
 				const latest = await command('status');
 				if (opponentAction(latest) === 'review-own-combat' && latest.match.id === m.id && latest.match.battle.seq === m.battle.seq) {
-					await command('ack');
+					await command('ack', {matchId:m.id, seq:m.battle.seq});
 					report('own-combat-continued', {
 						seq: m.battle.seq
 					});
@@ -82,6 +87,10 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 					seq: m?.seq, winner: action === 'finished' ? m.winner : undefined
 				});
 				return;
+			}
+			if (m.npcDuel === true) {
+				if (duelReady !== key) { duelReady = key; duelUntil = now() + 1000; }
+				if (now() < duelUntil) { report('wait-npc-turn-gap', {seq:m.seq}); return; }
 			}
 			if (now() < cooldown)
 				return;
@@ -105,7 +114,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 					attempted.add(option.from);
 					if (!allowedByPiece.has(option.from)) {
 						const selected = await command('select', {
-							from: option.from
+							from: option.from, seq:m.seq, matchId:m.id
 						});
 						if (opponentAction(selected) !== 'move' || selected.match.id !== m.id || selected.match.seq !== m.seq)
 							return;
@@ -123,7 +132,7 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 			}
 			if (choice && selectedFrom !== choice.from) {
 				const selected = await command('select', {
-					from: choice.from
+					from: choice.from, seq:m.seq, matchId:m.id
 				});
 				if (opponentAction(selected) !== 'move' || selected.match.id !== m.id || selected.match.seq !== m.seq || !selected.match.selection?.targets.some(t => t.to === choice.to))
 					return;
@@ -148,13 +157,14 @@ function policyOpponent({ command, delay, now = Date.now, emit = () => {
 			if (opponentAction(latest) !== 'move' || latest.match.id !== m.id || latest.match.seq !== m.seq || latest.match.selection?.from !== choice.from || !latest.match.selection.targets.some(t => t.to === choice.to))
 				return;
 			const moved = await command('move', {
-				from: choice.from, to: choice.to
+				from: choice.from, to: choice.to, seq:m.seq, matchId:m.id
 			});
 			firstMove = false;
 			cooldown = now();
 			report('moved', {
 				side: m.side, seq: moved.match?.seq, from: choice.from, to: choice.to
 			});
+			} finally { ticking = false; }
 		}
 	};
 }
@@ -170,14 +180,16 @@ export function createOpponent(authority, teacherKey, classCode, savedToken = ''
 		const s = state(), m = s.match;
 		if (action === 'status')
 			return s;
-		if (!m || s.phase !== 'active')
+		if (!m || s.phase !== 'active' || body.matchId && body.matchId !== m.id)
 			throw Error('Wait');
-		if (action === 'ack')
+		if (action === 'ack') {
+			if (!m.battle || body.seq !== m.battle.seq) throw Error('Combat changed');
 			return authority.call('ack', {
-				matchId: m.id, seq: m.battle.seq
+				matchId: m.id, seq: body.seq
 			}, token);
+		}
 		return authority.call(action, {
-			...body, seq: m.seq, requestId: crypto.randomUUID()
+			...body, seq: body.seq ?? m.seq, requestId: crypto.randomUUID()
 		}, token);
 	}
 	const bot = policyOpponent({

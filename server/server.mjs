@@ -72,7 +72,7 @@ export function createAuthority({ teacherKey = randomBytes(24).toString('hex'), 
 		}) || find(p);
 		return {
 			classCode, phase, presence, player: p.id, nickname: p.name, commander: p.commander || null, paired: isPaired(p), match: m ? {
-				...view(m, m.players.indexOf(p.id)), ...presetView(emoteRecords, m, m.players.indexOf(p.id), now()), battleContinue: battleContinueView(m, m.players.indexOf(p.id)), setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), setup: setupView(m, m.players.indexOf(p.id), phase, now()), playerNames: m.playerNames || m.players.map(id => students.get(id)?.name || "Player"), commanders: m.commanders || []
+				...view(m, m.players.indexOf(p.id)), npcDuel: m.players.length === 2 && m.players.every(id => students.get(id)?.npc === true), ...presetView(emoteRecords, m, m.players.indexOf(p.id), now()), battleContinue: battleContinueView(m, m.players.indexOf(p.id)), setupBlocked: setupBlocked(m), turnClock: turnView(m, now()), setup: setupView(m, m.players.indexOf(p.id), phase, now()), playerNames: m.playerNames || m.players.map(id => students.get(id)?.name || "Player"), commanders: m.commanders || []
 			} : null
 		};
 	};
