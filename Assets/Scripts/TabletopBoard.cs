@@ -394,10 +394,10 @@ public class TabletopBoard : MonoBehaviour
 		return target;
 	}
 
-	public void AnimateMove(int from, int to, int rotate, float progress)
+	public void AnimateMove(int from, int to, int rotate, float progress, float lift = 0)
 	{
 		int a = rotate == 0 ? from : 99 - from, b = rotate == 0 ? to : 99 - to;
-		pieces[a].transform.localPosition = Vector3.Lerp(Position(a), Position(b), Mathf.SmoothStep(0, 1, progress));
+		pieces[a].transform.localPosition = Vector3.Lerp(Position(a), Position(b), Mathf.SmoothStep(0, 1, progress)) + Vector3.up * lift;
 		dirty = true;
 	}
 

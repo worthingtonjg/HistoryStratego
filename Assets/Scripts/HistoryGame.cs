@@ -532,7 +532,7 @@ public partial class HistoryGame : MonoBehaviour
 				pending = intent;
 				Send("move", pending);
 			}
-			else error = "The position changed before your move could be sent. Please choose again.";
+			else { ClearMovePreview("stale"); error = "The position changed before your move could be sent. Please choose again."; }
 		}
 
 		if (pendingManualSelect != null && !busy)
@@ -654,6 +654,7 @@ public partial class HistoryGame : MonoBehaviour
 			if (req.result != UnityWebRequest.Result.Success)
 			{
 				if (swapPreview != null) ClearSwapPreview();
+				ClearMovePreview("rejected");
 				if (route == "ack")
 				{
 					combatClick.Retry();
@@ -2193,7 +2194,13 @@ public partial class HistoryGame : MonoBehaviour
 		{
 			foreach (var e in m.events)
 				if (e.seq > receivedSeq && (e.kind == "move" || e.kind == "combat"))
+				{
+					if (movePreview != null && movePreview.Match == m.id && e.seq == movePreview.Seq + 1 && e.from == movePreview.From && e.to == movePreview.To && e.side == m.side) {
+						if (e.kind == "move") { movePreview.Confirmed = true; if (Application.absoluteURL.Contains("qa=1")) Debug.Log("MOVE_PREVIEW_CONFIRMED"); continue; }
+						ClearMovePreview("combat-confirmed");
+					}
 					motions.Enqueue(e);
+				}
 			receivedSeq = m.seq;
 		}
 
@@ -2226,6 +2233,7 @@ public partial class HistoryGame : MonoBehaviour
 	void DrawBoard(MatchView m, bool editing, bool readOnly)
 	{
 		Track(m);
+		ObserveMovePreview(m);
 		if (tabletop == null)
 			tabletop = new GameObject("Tabletop view").AddComponent<TabletopBoard>();
 		bool swapping = !readOnly && swapPreview != null && swapPreview.Active && SwapContextValid;
@@ -2308,16 +2316,22 @@ public partial class HistoryGame : MonoBehaviour
 			hints = null;
 		}
 
+		var raisedAttack = PrepareBoardAttack(m, b);
+		bool previewing = !readOnly && movePreview != null;
+		if (previewing) { b[movePreview.From] = movePreview.Piece; if (!movePreview.Attack) b[movePreview.To] = null; highlight = movePreview.From; hints = new bool[100]; hints[movePreview.To] = true; }
 		int rotate = readOnly ? 0 : m.side;
 		var texture = tabletop.Render(b, rotate, highlight, hints, from, to, boardRenderWidth, boardRenderHeight);
 		if (motion != null)
-			tabletop.AnimateMove(motion.from, motion.to, rotate, travel * (motion.kind == "combat" ? .7f : 1));
+			tabletop.AnimateMove(motion.from, motion.to, rotate, travel, motion.kind == "combat" ? .4f * Mathf.SmoothStep(0, 1, Mathf.Clamp01(travel / .25f)) : 0);
+		AnimateBoardAttack(m, raisedAttack, rotate);
+		if (previewing) { tabletop.AnimateMove(movePreview.From, movePreview.To, rotate, movePreview.Progress(Time.unscaledTime) * (movePreview.Attack ? .15f : 1)); boostUntil = Time.unscaledTime + .2f; }
 		if (swapping)
 		{
 			int a = m.side == 0 ? 60 + swapPreview.From : 39 - swapPreview.From, z = m.side == 0 ? 60 + swapPreview.To : 39 - swapPreview.To;
 			tabletop.AnimateSwap(a, z, rotate, swapPreview.Progress(Time.unscaledTime));
 		}
 		GUI.DrawTexture(boardRect, texture, ScaleMode.StretchToFill, true);
+		if (previewing && !movePreview.Confirmed) GUI.Label(new Rect(boardRect.x+8, boardRect.y+8, boardRect.width-16, 30), movePreview.Attack ? "Attack requested - awaiting confirmation" : "Move requested - awaiting confirmation");
 		if (!commanderOpen && !readOnly && !EndgamePresentation.Terminal(m.phase, state.phase) && motion == null && m.battle?.kind != "combat" && !m.blocked && Event.current.type == EventType.MouseDown && Event.current.button == 0)
 		{
 			Vector3 raw = new Vector3(rawPointer.x, rawPointer.y, 0);
@@ -2340,7 +2354,7 @@ public partial class HistoryGame : MonoBehaviour
 		var m = state.match;
 		if (DeadlineBlocked(m))
 			return;
-		if (pendingMoveIntent != null) return;
+		if (pendingMoveIntent != null || movePreview != null) return;
 		if (editing)
 		{
 			if (ActionBusy)
@@ -2400,6 +2414,7 @@ public partial class HistoryGame : MonoBehaviour
 			if ((uiActions.Reading || activeRoute == "select") && (p == null || p.side != m.side) && option?.targets != null && Array.Exists(option.targets, target => target.to == i))
 			{
 				pendingMoveIntent = new Command { matchId = m.id, from = from, to = i, seq = m.seq, requestId = Guid.NewGuid().ToString() };
+				BeginMovePreview(m, from, i);
 				autoSelectionCandidates = null;
 				RememberSelectionTurn(m);
 				if (Application.absoluteURL.Contains("qa=1")) Debug.Log("MOVE_INTENT_QUEUED");
@@ -2449,6 +2464,7 @@ public partial class HistoryGame : MonoBehaviour
 				seq = m.seq,
 				requestId = Guid.NewGuid().ToString()
 			};
+		BeginMovePreview(m, selected, i);
 		Send("move", pending);
 	}
 

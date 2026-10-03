@@ -1,0 +1,11 @@
+using System;using System.IO;using System.Reflection;using UnityEngine;using UnityEditor;using UnityEditor.SceneManagement;
+public static class BoardAttackRender {
+ public static void Render(){ShaderUtil.allowAsyncCompilation=false;EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);Directory.CreateDirectory("Logs/BoardAttack");int count=0;
+ string[] attackers={"6","4","3","2","1","4"},defenders={"4","4","B","B","10","F"};int[] outcomes={1,0,1,-1,1,1};
+ for(int side=0;side<2;side++)for(int c=0;c<6;c++)foreach(bool zoom in new[]{false,true}){
+ var g=new GameObject("Board attack fixture");var stage=g.AddComponent<TabletopBoard>();int from=side==0?60:39,to=side==0?50:49;var board=new PieceView[100];board[from]=new PieceView{side=side,rank=attackers[c]};board[to]=new PieceView{side=1-side,rank=defenders[c]};
+ foreach(float progress in new[]{.3f,1f}){var rt=stage.Render(board,side,from,null,from,to,zoom?1000:1400,zoom?1000:899);float lift=.4f*Mathf.SmoothStep(0,1,Mathf.Clamp01(progress/.25f));stage.AnimateMove(from,to,side,progress,lift);var pieces=(GameObject[])typeof(TabletopBoard).GetField("pieces",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(stage);int a=side==0?from:99-from,b=side==0?to:99-to;if(pieces[a].transform.localPosition.y-pieces[b].transform.localPosition.y<.399f)throw new Exception("Attacker not above defender");stage.Flush();Save((RenderTexture)rt,"side"+side+"-"+c+"-"+zoom+"-"+progress);count++;}
+ board[from]=null;board[to]=outcomes[c]>0?new PieceView{side=side,rank=attackers[c]}:outcomes[c]<0?new PieceView{side=1-side,rank=defenders[c]}:null;stage.InvalidatePositions();var final=stage.Render(board,side,-1,null,-1,-1,zoom?1000:1400,zoom?1000:899);stage.Flush();Save((RenderTexture)final,"side"+side+"-"+c+"-"+zoom+"-settled");count++;UnityEngine.Object.DestroyImmediate(g);
+ }Debug.Log("BOARD_ATTACK_RENDER_COMPLETE "+count);}
+ static void Save(RenderTexture rt,string name){RenderTexture.active=rt;var t=new Texture2D(rt.width,rt.height,TextureFormat.RGB24,false);t.ReadPixels(new Rect(0,0,rt.width,rt.height),0,0);t.Apply();File.WriteAllBytes("Logs/BoardAttack/"+name+".png",t.EncodeToPNG());UnityEngine.Object.DestroyImmediate(t);RenderTexture.active=null;}
+}
